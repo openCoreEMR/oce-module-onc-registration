@@ -1,0 +1,28 @@
+# Composer
+/vendor/
+composer.lock
+
+# IDE
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Module specific
+*.log
+
+# Testing
+/htmlcov/
+.phpunit.cache/
+.phpunit.result.cache
+
+# Docker
+.docker/
+compose.override.yml
+
+# Environment files with secrets
+.env.testing

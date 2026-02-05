@@ -1,0 +1,18 @@
+{#
+ # Generic error page. Exception messages are not shown to users to avoid leaking implementation details.
+ #}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ title|default('Error')|xlt }}</title>
+    <link rel="stylesheet" href="{{ webroot|default('')|attr }}/public/assets/bootstrap/dist/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="alert alert-danger" role="alert">
+            <h4 class="alert-heading">{{ 'An error occurred.'|xlt }}</h4>
+            <p class="mb-0">{{ 'Please try again or contact support if the problem persists.'|xlt }}</p>
+        </div>
+    </div>
+</body>
+</html>

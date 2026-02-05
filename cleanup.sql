@@ -1,0 +1,11 @@
+--
+-- Cleanup script for {vendor-prefix}-module-{modulename}
+--
+-- This file is run when doing a complete module reinstall.
+-- It drops all module tables so they can be recreated fresh.
+--
+-- WARNING: This will DELETE all module data!
+--
+
+-- Example cleanup (remove/modify as needed):
+-- DROP TABLE IF EXISTS `{vendor_prefix}_{modulename}_items`;

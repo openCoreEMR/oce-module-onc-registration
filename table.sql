@@ -1,0 +1,22 @@
+--
+-- Database schema for {vendor-prefix}-module-{modulename}
+--
+-- This file is run during module installation to create the necessary tables.
+-- It should be idempotent (safe to run multiple times).
+--
+-- TEMPLATE: Rename this file to 'sql/table.sql' or 'sql/install.sql' if you prefer
+--           to keep SQL files in a dedicated directory.
+--
+
+-- Example table (remove/modify as needed):
+-- CREATE TABLE IF NOT EXISTS `{vendor_prefix}_{modulename}_items` (
+--     `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+--     `name` VARCHAR(255) NOT NULL DEFAULT '',
+--     `description` TEXT,
+--     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+--     `updated_at` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+--     `created_by` BIGINT(20) UNSIGNED DEFAULT NULL COMMENT 'users.id',
+--     PRIMARY KEY (`id`),
+--     INDEX `idx_name` (`name`),
+--     INDEX `idx_created_by` (`created_by`)
+-- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

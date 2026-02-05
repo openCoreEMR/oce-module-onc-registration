@@ -1,0 +1,332 @@
+# https://taskfile.dev
+# Task runner for OpenEMR module development
+#
+# SEPARATION OF CONCERNS:
+#   Taskfile: Infrastructure operations (Docker, database, module management)
+#   Composer: Code quality checks (phpcs, phpstan, rector)
+#
+# WHY BOTH?
+#   - Composer scripts work in ANY environment (local, Docker, CI)
+#   - Taskfile provides convenience wrappers and Docker orchestration
+#   - Prevents bloated composer.json with Docker-specific commands
+#   - Taskfile can call Composer scripts (see check: tasks below)
+#
+# Installation: https://taskfile.dev/installation/
+#   macOS:   brew install go-task
+#   Linux:   sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b ~/.local/bin
+#
+# Usage:
+#   task --list              # Show all available tasks
+#   task dev:start           # Start Docker environment
+#   task module:install      # Install module in OpenEMR
+#   task check               # Run code quality checks (calls pre-commit/composer)
+
+version: '3'
+
+vars:
+  # TEMPLATE: Replace oce-module-onc-registration with your module name
+  MODULE_NAME: 'oce-module-onc-registration'
+  MODULE_PATH: /var/www/localhost/htdocs/openemr/interface/modules/custom_modules/{{.MODULE_NAME}}
+  DB_USER: root
+  DB_PASS: root
+  DB_NAME: openemr
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+    - task --list
+
+  # === Docker Environment ===
+
+  dev:start:
+    desc: Start Docker development environment
+    cmds:
+    - docker compose up -d --wait
+    - echo "OpenEMR started. Get port with 'task dev:port'"
+
+  dev:stop:
+    desc: Stop Docker environment (keeps data)
+    cmds:
+    - docker compose down
+    - echo "Docker environment stopped"
+
+  dev:restart:
+    desc: Restart Docker environment
+    cmds:
+    - docker compose restart
+    - echo "Docker environment restarted"
+
+  dev:reset:
+    desc: Stop and remove all data (fresh start)
+    prompt: This will delete ALL data. Continue?
+    cmds:
+    - docker compose down -v
+    - echo "All data removed. Run 'task dev:start' to start fresh"
+
+  dev:purge:
+    desc: Stop and remove all containers, volumes, and orphans
+    prompt: This will DELETE all Docker containers, volumes, and orphans. Continue?
+    cmds:
+    - docker compose down -v --remove-orphans
+    - echo "Docker environment purged"
+
+  dev:has-volumes:
+    desc: Check if Docker volumes exist (returns 0 if exist, 1 if not)
+    internal: true
+    cmds:
+    - test -n "$(docker volume ls -q --filter name={{.MODULE_NAME}})"
+
+  dev:logs:
+    desc: View OpenEMR logs (follow mode)
+    cmds:
+    - docker compose logs -f openemr
+
+  dev:logs:errors:
+    desc: View OpenEMR error logs only
+    cmds:
+    - docker compose logs -f openemr | grep -i error
+
+  dev:port:
+    desc: Get assigned port for OpenEMR
+    cmds:
+    - echo "OpenEMR HTTP port:"
+    - docker compose port openemr 80
+    - echo ""
+    - echo "Access OpenEMR at http://localhost:[PORT]"
+    - echo "Login - admin / pass"
+
+  dev:browse:
+    desc: Open OpenEMR in your default browser
+    cmds:
+    - |
+      HTTPS_PORT=$(docker compose port openemr 443 | cut -d: -f2)
+      if [ -z "$HTTPS_PORT" ]; then
+        echo "Could not detect HTTPS port. Is Docker running?"
+        exit 1
+      fi
+      URL="https://localhost:$HTTPS_PORT"
+      echo "Opening OpenEMR at $URL"
+      echo "Login credentials: admin / pass"
+      if command -v open > /dev/null 2>&1; then
+        open "$URL"
+      elif command -v xdg-open > /dev/null 2>&1; then
+        xdg-open "$URL"
+      else
+        echo "Could not find 'open' or 'xdg-open' command"
+        echo "Please open this URL manually: $URL"
+      fi
+
+  dev:shell:
+    desc: Access OpenEMR container shell
+    cmds:
+    - docker compose exec openemr bash
+
+  dev:status:
+    desc: Check Docker container status
+    cmds:
+    - docker compose ps
+
+  # === Module Management ===
+
+  module:list:
+    desc: List all registered modules and their status
+    cmds:
+    - docker compose exec openemr php {{.MODULE_PATH}}/bin/install-module.php module:list
+
+  module:install:
+    desc: Install and enable this module in OpenEMR
+    cmds:
+    - docker compose exec openemr php {{.MODULE_PATH}}/bin/install-module.php module:install-enable {{.MODULE_NAME}}
+
+  module:register:
+    desc: Register module in OpenEMR (without installing SQL)
+    cmds:
+    - docker compose exec openemr php {{.MODULE_PATH}}/bin/install-module.php module:register {{.MODULE_NAME}}
+
+  module:enable:
+    desc: Enable an already-installed module
+    cmds:
+    - docker compose exec openemr php {{.MODULE_PATH}}/bin/install-module.php module:enable {{.MODULE_NAME}}
+
+  module:disable:
+    desc: Disable the module (keeps data)
+    cmds:
+    - docker compose exec openemr php {{.MODULE_PATH}}/bin/install-module.php module:disable {{.MODULE_NAME}}
+
+  module:unregister:
+    desc: Unregister module from OpenEMR (disables first)
+    cmds:
+    - task: module:disable
+    - docker compose exec openemr php {{.MODULE_PATH}}/bin/install-module.php module:unregister {{.MODULE_NAME}}
+
+  module:reinstall:
+    desc: Unregister, cleanup tables, and reinstall module
+    cmds:
+    - task: module:cleanup
+    - task: module:install
+
+  module:install:manual:
+    desc: Show manual installation instructions (web UI)
+    cmds:
+    - echo "Module installation via OpenEMR web interface:"
+    - echo "   1. Go to Administration > Modules > Manage Modules"
+    - echo "   2. Find '{{.MODULE_NAME}}'"
+    - echo "   3. Click Register (if not registered)"
+    - echo "   4. Click Install"
+    - echo "   5. Click Enable"
+
+  module:cleanup:
+    desc: Drop all module database tables (for clean reinstall)
+    prompt: This will delete all module data. Continue?
+    cmds:
+    - task: module:disable
+    - task: module:unregister
+    - docker compose exec -T mysql mariadb -u{{.DB_USER}} -p{{.DB_PASS}} {{.DB_NAME}} < cleanup.sql
+    - echo "Module tables dropped. You can now reinstall the module."
+
+  # === Database Access ===
+
+  db:shell:
+    desc: Access MariaDB database shell
+    cmds:
+    - docker compose exec mysql mariadb -u{{.DB_USER}} -p{{.DB_PASS}} {{.DB_NAME}}
+
+  db:export:
+    desc: Export database to backup.sql
+    cmds:
+    - docker compose exec mysql mariadb-dump -u{{.DB_USER}} -p{{.DB_PASS}} {{.DB_NAME}} > backup.sql
+    - echo "Database exported to backup.sql"
+
+  db:import:
+    desc: Import database from backup.sql
+    prompt: This will overwrite the current database. Continue?
+    cmds:
+    - docker compose exec -T mysql mariadb -u{{.DB_USER}} -p{{.DB_PASS}} {{.DB_NAME}} < backup.sql
+    - echo "Database imported from backup.sql"
+
+  db:query:
+    desc: 'Run a SQL query (usage: task db:query -- "SELECT * FROM users LIMIT 5")'
+    cmds:
+    - docker compose exec mysql mariadb -u{{.DB_USER}} -p{{.DB_PASS}} -e "{{.CLI_ARGS}}" {{.DB_NAME}} 2>&1 | grep -v "Using a password"
+
+  # === Code Quality (delegates to Composer scripts) ===
+  # These tasks call Composer scripts directly on the host (no Docker needed).
+  # You can also run `composer phpcs`, `composer phpstan`, etc. directly.
+
+  check:
+    desc: Run all code quality checks (calls pre-commit run -a)
+    cmds:
+    - pre-commit run -a
+
+  check:phpcs:
+    desc: Run PHP CodeSniffer (calls composer phpcs)
+    cmds:
+    - composer phpcs
+
+  check:phpstan:
+    desc: Run PHPStan (calls composer phpstan)
+    cmds:
+    - composer phpstan
+
+  check:fix:
+    desc: Auto-fix code style (calls composer phpcbf)
+    cmds:
+    - composer phpcbf
+
+  # === Testing ===
+
+  test:
+    desc: Run PHPUnit tests
+    cmds:
+    - composer test
+
+  test:coverage:
+    desc: Run PHPUnit with coverage report
+    cmds:
+    - docker compose run --rm phpunit-coverage
+
+  test:docker:
+    desc: Run PHPUnit tests in Docker
+    cmds:
+    - docker compose run --rm phpunit
+
+  # === Development Helpers ===
+  # Composer dependency management tasks (infrastructure, not code quality)
+
+  composer:install:
+    desc: Install composer dependencies
+    cmds:
+    - composer install
+    - echo "Composer dependencies installed"
+
+  composer:update:
+    desc: Update composer dependencies
+    cmds:
+    - composer update
+    - echo "Composer dependencies updated"
+
+  openemr:prebuild:
+    desc: Pre-build OpenEMR dependencies (speeds up first Docker start)
+    cmds:
+    - echo "Building OpenEMR dependencies..."
+    - cd vendor/openemr/openemr && composer install --no-dev
+    - cd vendor/openemr/openemr && npm install --legacy-peer-deps
+    - cd vendor/openemr/openemr && npm run build
+    - echo "OpenEMR dependencies built"
+
+  git:clean:
+    desc: Run git clean (remove untracked files, preserves .local/)
+    prompt: This will delete untracked files (except .local/). Continue?
+    cmds:
+    - git clean -fd -e .local
+    - echo "Untracked files removed (preserved .local/)"
+
+  vendor:clean:
+    desc: Remove vendor directory (forces complete reinstall of dependencies)
+    prompt: This will DELETE the entire vendor directory. Continue?
+    preconditions:
+    - sh: test -z "$(docker volume ls -q --filter name={{.MODULE_NAME}} 2>/dev/null)"
+      msg: |
+        Docker volumes still exist. You must run 'task dev:purge' first.
+
+        Reason: OpenEMR stores crypto keys in both the database (volume) and filesystem (vendor).
+        Removing vendor without removing volumes will break encryption and make the database unusable.
+
+        Run: task workflow:nuke (to remove both) or task dev:purge (then task vendor:clean)
+    cmds:
+    - git clean -ffdx vendor/
+    - echo "Vendor directory removed"
+
+  # === Quick Workflows ===
+
+  setup:
+    desc: Complete setup (install deps, prebuild OpenEMR, start Docker)
+    cmds:
+    - task: composer:install
+    - task: openemr:prebuild
+    - task: dev:start
+    - task: dev:port
+
+  workflow:reinstall:
+    desc: Complete reinstall workflow (cleanup tables, instructions)
+    cmds:
+    - task: module:cleanup
+    - task: module:install
+
+  workflow:reset:
+    desc: Complete reset (stop, clean data, restart)
+    cmds:
+    - task: dev:reset
+    - task: dev:start
+    - echo ""
+    - echo "Environment reset complete"
+    - task: dev:port
+
+  workflow:nuke:
+    desc: Nuclear reset (removes vendor + database volumes, forces complete reinstall)
+    cmds:
+    - task: dev:purge
+    - task: vendor:clean
+    - echo "Complete reset done. Vendor removed, Docker volumes deleted."
+    - echo "   Run 'task setup' to rebuild from scratch."

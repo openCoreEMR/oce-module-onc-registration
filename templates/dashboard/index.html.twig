@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title|text }} - OpenEMR</title>
+    <link rel="stylesheet" href="{{ webroot }}/public/assets/bootstrap/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ webroot }}/public/assets/@fortawesome/fontawesome-free/css/all.min.css">
+    <style>
+        .status-pass { color: #28a745; }
+        .status-fail { color: #dc3545; }
+        .card { margin-bottom: 1rem; }
+        .checklist-item { padding: 0.5rem 0; border-bottom: 1px solid #eee; }
+        .checklist-item:last-child { border-bottom: none; }
+        .email-preview { background: #f8f9fa; padding: 1rem; border-radius: 4px; font-family: monospace; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <div class="col-12">
+                <h1><i class="fa fa-certificate"></i> {{ 'ONC Registration'|xlt }}</h1>
+                <p class="lead">{{ 'Manage your ONC certification registration for this OpenEMR installation.'|xlt }}</p>
+                <hr>
+            </div>
+        </div>
+
+        <div class="row">
+            {# Configuration Validation Card #}
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fa fa-check-circle"></i> {{ 'Configuration Checklist'|xlt }}
+                        {% if all_settings_valid %}
+                            <span class="badge bg-success float-end">{{ 'All Passed'|xlt }}</span>
+                        {% else %}
+                            <span class="badge bg-danger float-end">{{ validation_summary.failed }} {{ 'Failed'|xlt }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">{{ 'Required OpenEMR settings for ONC certification:'|xlt }}</p>
+
+                        {% for key, item in config_validation %}
+                            <div class="checklist-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ item.description|text }}</strong>
+                                    <br>
+                                    <small class="text-muted">
+                                        {{ 'Required'|xlt }}: <code>{{ item.required|text }}</code>
+                                        {% if not item.passed %}
+                                            | {{ 'Current'|xlt }}: <code>{{ item.actual|text ?: '(empty)' }}</code>
+                                        {% endif %}
+                                    </small>
+                                </div>
+                                <div>
+                                    {% if item.passed %}
+                                        <i class="fa fa-check-circle fa-lg status-pass"></i>
+                                    {% else %}
+                                        <i class="fa fa-times-circle fa-lg status-fail"></i>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+
+                        {% if not all_settings_valid %}
+                            <div class="alert alert-warning mt-3 mb-0">
+                                <i class="fa fa-exclamation-triangle"></i>
+                                {{ 'Some settings need to be configured. Go to Administration > Globals to update them.'|xlt }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            {# Registration Info Card #}
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fa fa-building"></i> {{ 'Organization Information'|xlt }}
+                        {% if registration_info.complete %}
+                            <span class="badge bg-success float-end">{{ 'Complete'|xlt }}</span>
+                        {% else %}
+                            <span class="badge bg-warning float-end">{{ 'Incomplete'|xlt }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">{{ 'Information required for ONC registration:'|xlt }}</p>
+
+                        <table class="table table-sm">
+                            <tr>
+                                <th>{{ 'Organization Name'|xlt }}</th>
+                                <td>
+                                    {% if org_name %}
+                                        {{ org_name|text }}
+                                    {% else %}
+                                        <span class="text-danger">{{ 'Not configured'|xlt }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>{{ 'Organization Location'|xlt }}</th>
+                                <td>
+                                    {% if org_location %}
+                                        {{ org_location|text }}
+                                    {% else %}
+                                        <span class="text-danger">{{ 'Not configured'|xlt }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>{{ 'Organization NPI'|xlt }}</th>
+                                <td>
+                                    {% if org_npi %}
+                                        {{ org_npi|text }}
+                                        {% if npi_validation %}
+                                            {% if npi_validation.valid %}
+                                                <i class="fa fa-check-circle status-pass" title="{{ 'Valid NPI'|xlt }}"></i>
+                                            {% else %}
+                                                <i class="fa fa-exclamation-circle status-fail" title="{{ npi_validation.error|text }}"></i>
+                                                <small class="text-danger">{{ npi_validation.error|text }}</small>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-danger">{{ 'Not configured'|xlt }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>{{ 'FHIR Endpoint'|xlt }}</th>
+                                <td>
+                                    {% if fhir_endpoint %}
+                                        <code>{{ fhir_endpoint|text }}</code>
+                                        {% if fhir_endpoint == detected_fhir_endpoint %}
+                                            <small class="text-muted">({{ 'auto-detected'|xlt }})</small>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-danger">{{ 'Not configured'|xlt }}</span>
+                                        {% if detected_fhir_endpoint %}
+                                            <br><small class="text-muted">{{ 'Detected'|xlt }}: <code>{{ detected_fhir_endpoint|text }}</code></small>
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+
+                        {% if not registration_info.complete %}
+                            <div class="alert alert-warning mb-0">
+                                <i class="fa fa-exclamation-triangle"></i>
+                                {{ 'Missing:'|xlt }} {{ registration_info.missing|join(', ') }}
+                                <br>
+                                <small>{{ 'Configure these in Administration > Globals > ONC Registration.'|xlt }}</small>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Registration Submission Card #}
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fa fa-paper-plane"></i> {{ 'Submit Registration'|xlt }}
+                    </div>
+                    <div class="card-body">
+                        {% if registration_date %}
+                            <div class="alert alert-info">
+                                <i class="fa fa-info-circle"></i>
+                                {{ 'Registration submitted on'|xlt }}: <strong>{{ registration_date|text }}</strong>
+                                {% if registration_status %}
+                                    | {{ 'Status'|xlt }}: <strong>{{ registration_status|text }}</strong>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+
+                        {% if not all_settings_valid or not registration_info.complete %}
+                            <div class="alert alert-danger">
+                                <i class="fa fa-exclamation-circle"></i>
+                                {{ 'Cannot submit registration until all configuration requirements are met.'|xlt }}
+                            </div>
+                        {% else %}
+                            <p>{{ 'To register your installation with the OpenEMR Foundation, send an email to'|xlt }}
+                               <strong>{{ registration_email|text }}</strong> {{ 'with subject'|xlt }}
+                               <strong>"{{ registration_subject|text }}"</strong>.</p>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5>{{ 'Option 1: Send via Email Client'|xlt }}</h5>
+                                    <a href="{{ mailto_link|attr }}" class="btn btn-primary btn-lg">
+                                        <i class="fa fa-envelope"></i> {{ 'Open Email Client'|xlt }}
+                                    </a>
+                                </div>
+                                <div class="col-md-6">
+                                    <h5>{{ 'Option 2: Copy and Send Manually'|xlt }}</h5>
+                                    <p><strong>{{ 'To'|xlt }}:</strong> {{ registration_email|text }}</p>
+                                    <p><strong>{{ 'Subject'|xlt }}:</strong> {{ registration_subject|text }}</p>
+                                    <p><strong>{{ 'Body'|xlt }}:</strong></p>
+                                    <div class="email-preview">{{ email_body|text }}</div>
+                                    <button type="button" class="btn btn-secondary mt-2" onclick="copyEmailBody()">
+                                        <i class="fa fa-copy"></i> {{ 'Copy to Clipboard'|xlt }}
+                                    </button>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <hr>
+
+                        <h5>{{ 'Verify Registration'|xlt }}</h5>
+                        <p>{{ 'After submitting, your FHIR endpoint should appear on the published Service Base URLs page within 10 business days.'|xlt }}</p>
+                        <a href="{{ published_urls_page|attr }}" target="_blank" class="btn btn-outline-secondary">
+                            <i class="fa fa-external-link-alt"></i> {{ 'View Published URLs'|xlt }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Info Card #}
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fa fa-info-circle"></i> {{ 'About ONC Certification'|xlt }}
+                    </div>
+                    <div class="card-body">
+                        <p>{{ 'OpenEMR is ONC Certified. For your installation to use this certification, you must:'|xlt }}</p>
+                        <ol>
+                            <li>{{ 'Configure the required global settings (see checklist above)'|xlt }}</li>
+                            <li>{{ 'Ensure your FHIR endpoint is publicly accessible via HTTPS'|xlt }}</li>
+                            <li>{{ 'Register your organization details with the OpenEMR Foundation'|xlt }}</li>
+                            <li>{{ 'Use end-user devices with AES-encrypted drives'|xlt }}</li>
+                            <li>{{ 'Use FIPS-compliant SSL/TLS ciphers'|xlt }}</li>
+                            <li>{{ 'Support NTP v4 (RFC 5905) for time synchronization'|xlt }}</li>
+                        </ol>
+                        <p>
+                            <a href="https://www.open-emr.org/wiki/index.php/OpenEMR_7.0.2_ONC_Certification_Requirements" target="_blank">
+                                {{ 'Read the full ONC Certification Requirements'|xlt }} <i class="fa fa-external-link-alt"></i>
+                            </a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function copyEmailBody() {
+            const emailBody = {{ email_body|json_encode|raw }};
+            navigator.clipboard.writeText(emailBody).then(function() {
+                alert('{{ 'Email body copied to clipboard!'|xlj }}');
+            }, function() {
+                alert('{{ 'Failed to copy. Please select and copy manually.'|xlj }}');
+            });
+        }
+    </script>
+</body>
+</html>

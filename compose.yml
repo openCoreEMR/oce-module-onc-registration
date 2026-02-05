@@ -1,0 +1,91 @@
+name: oce-module-template
+
+# OpenEMR module development environment
+#
+# Extends OpenEMR's development-easy services with overrides:
+# - Random ports instead of fixed (8300, 9300, etc.)
+# - Module mounted into OpenEMR's custom_modules directory
+# - PHPUnit services available via profiles
+#
+# TEMPLATE: Replace oce-module-onc-registration with your module name
+
+services:
+  openemr:
+    extends:
+      file: vendor/openemr/openemr/docker/development-easy/docker-compose.yml
+      service: openemr
+    volumes:
+    # TEMPLATE: Update the path below with your module name
+    - .:/var/www/localhost/htdocs/openemr/interface/modules/custom_modules/oce-module-onc-registration:rw
+    ports: !override
+    - "127.0.0.1::80"
+    - "127.0.0.1::443"
+    healthcheck:
+      test: ["CMD", "curl", "-fsk", "https://localhost:443/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 3m
+
+  mysql:
+    extends:
+      file: vendor/openemr/openemr/docker/development-easy/docker-compose.yml
+      service: mysql
+    ports: !override
+    - "127.0.0.1::3306"
+
+  phpmyadmin:
+    extends:
+      file: vendor/openemr/openemr/docker/development-easy/docker-compose.yml
+      service: phpmyadmin
+    ports: !override
+    - "127.0.0.1::8080"
+
+  couchdb:
+    extends:
+      file: vendor/openemr/openemr/docker/development-easy/docker-compose.yml
+      service: couchdb
+    ports: !override
+    - "127.0.0.1::5984"
+    - "127.0.0.1::6984"
+
+  openldap:
+    extends:
+      file: vendor/openemr/openemr/docker/development-easy/docker-compose.yml
+      service: openldap
+
+  # PHPUnit test runner
+  phpunit:
+    profiles: [test]
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    volumes:
+    - .:/app
+    - /app/vendor
+    command: vendor/bin/phpunit --testdox
+
+  # PHPUnit with coverage
+  phpunit-coverage:
+    profiles: [test]
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    volumes:
+    - .:/app
+    - /app/vendor
+    - ./htmlcov:/app/htmlcov
+    environment:
+      XDEBUG_MODE: coverage
+    command: vendor/bin/phpunit --coverage-html htmlcov --coverage-text
+
+volumes:
+  databasevolume: {}
+  assetvolume: {}
+  themevolume: {}
+  sitesvolume: {}
+  nodemodules: {}
+  vendordir: {}
+  ccdanodemodules: {}
+  logvolume: {}
+  couchdbvolume: {}

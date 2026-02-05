@@ -1,0 +1,152 @@
+{
+  "name": "opencoreemr/oce-module-onc-registration",
+  "description": "OpenEMR module to facilitate ONC certification registration for installations",
+  "license": "GPL-3.0-or-later",
+  "type": "openemr-module",
+  "keywords": [
+    "openemr",
+    "module",
+    "healthcare",
+    "onc",
+    "certification",
+    "fhir"
+  ],
+  "authors": [
+    {
+      "name": "Michael A. Smith",
+      "email": "michael@opencoreemr.com",
+      "homepage": "https://opencoreemr.com",
+      "role": "Developer"
+    }
+  ],
+  "homepage": "https://opencoreemr.com",
+  "support": {
+    "email": "support@opencoreemr.com",
+    "issues": "https://github.com/opencoreemr/oce-module-onc-registration/issues",
+    "source": "https://github.com/opencoreemr/oce-module-onc-registration"
+  },
+  "require": {
+    "php": ">=8.2",
+    "ext-filter": "*",
+    "openemr/oe-module-installer-plugin": "^0.1.5",
+    "psr/log": "^1.0 || ^2.0 || ^3.0",
+    "symfony/console": "^6.4 || ^7.0",
+    "symfony/event-dispatcher": "^6.4 || ^7.0",
+    "symfony/http-foundation": "^6.4 || ^7.0",
+    "twig/twig": "^3.0"
+  },
+  "require-dev": {
+    "ergebnis/composer-normalize": "^2.44",
+    "openemr/openemr": ">=7.0.3.4 || 7.0.4.x-dev || dev-master",
+    "phpstan/phpstan": "^2.1",
+    "phpunit/phpunit": "^11.0",
+    "rector/rector": "^2.0",
+    "squizlabs/php_codesniffer": "^4.0"
+  },
+  "repositories": [
+    {
+      "type": "package",
+      "package": {
+        "name": "openemr/openemr",
+        "version": "7.0.3.4",
+        "autoload": {
+          "psr-4": {
+            "OpenEMR\\": "src/"
+          }
+        },
+        "source": {
+          "type": "git",
+          "url": "https://github.com/openemr/openemr.git",
+          "reference": "v7_0_3_4"
+        }
+      }
+    },
+    {
+      "type": "package",
+      "package": {
+        "name": "openemr/openemr",
+        "version": "7.0.4.x-dev",
+        "autoload": {
+          "psr-4": {
+            "OpenEMR\\": "src/"
+          }
+        },
+        "source": {
+          "type": "git",
+          "url": "https://github.com/openemr/openemr.git",
+          "reference": "rel-704"
+        }
+      }
+    },
+    {
+      "type": "package",
+      "package": {
+        "name": "openemr/openemr",
+        "version": "dev-master",
+        "autoload": {
+          "psr-4": {
+            "OpenEMR\\": "src/"
+          }
+        },
+        "source": {
+          "type": "git",
+          "url": "https://github.com/openemr/openemr.git",
+          "reference": "master"
+        }
+      }
+    }
+  ],
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "autoload": {
+    "psr-4": {
+      "OpenCoreEMR\\Modules\\OncRegistration\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "OpenCoreEMR\\Modules\\OncRegistration\\Tests\\": "tests/"
+    }
+  },
+  "config": {
+    "allow-plugins": {
+      "ergebnis/composer-normalize": true,
+      "openemr/oe-module-installer-plugin": true,
+      "php-http/discovery": true
+    },
+    "sort-packages": true
+  },
+  "extra": {
+    "oe-module-name": "oce-module-onc-registration"
+  },
+  "scripts": {
+    "post-install-cmd": [
+      "echo 'OpenCoreEMR Module installed successfully!'",
+      "echo 'Please go to Administration > Modules > Manage Modules to register and enable the module.'"
+    ],
+    "post-update-cmd": [
+      "echo 'OpenCoreEMR Module updated successfully!'"
+    ],
+    "_comment": "Composer scripts handle CODE QUALITY checks that work in any environment (local, Docker, CI). For infrastructure operations (Docker, database, module management), use Taskfile instead. See Taskfile.yml for separation of concerns.",
+    "check": [
+      "@php-lint",
+      "@phpcs",
+      "@phpstan",
+      "@rector"
+    ],
+    "fix": [
+      "@phpcbf",
+      "@rector-fix"
+    ],
+    "php-lint": "git ls-files -z '*.php' | xargs -0 -n1 php -l",
+    "phpcbf": "phpcbf",
+    "phpcs": "phpcs",
+    "phpstan": "phpstan --memory-limit=512M analyse",
+    "phpunit": "phpunit --testdox",
+    "phpunit-coverage": "phpunit --coverage-html htmlcov --coverage-text",
+    "rector": "rector process --dry-run",
+    "rector-fix": "rector process",
+    "require-checker": "@php -r \"if(!shell_exec('which composer-require-checker')){echo \\\"composer-require-checker not found. Install globally: composer global require maglnet/composer-require-checker\\n\\\";exit(1);}\" && composer-require-checker check --config-file=.composer-require-checker.json",
+    "test": "@phpunit"
+  }
+}
