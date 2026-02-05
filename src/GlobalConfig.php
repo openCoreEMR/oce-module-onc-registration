@@ -1,7 +1,10 @@
 <?php
 
 /**
- * Manages the configuration options for the ONC Registration module.
+ * Provides access to OpenEMR configuration for ONC Registration.
+ *
+ * All organization info is auto-detected from the primary business entity
+ * facility and OpenEMR globals. No module-specific configuration is needed.
  *
  * @package   OpenCoreEMR
  * @link      http://www.open-emr.org
@@ -12,30 +15,34 @@
 
 namespace OpenCoreEMR\Modules\OncRegistration;
 
-use OpenEMR\Services\Globals\GlobalSetting;
+use OpenEMR\Services\FacilityService;
 
 class GlobalConfig
 {
+    // Module config keys (stored in OpenEMR globals)
+    public const CONFIG_PREVIEW_MODE = 'oce_onc_registration_preview';
+
     private readonly bool $isEnvConfigMode;
+
+    /** @var array<string, mixed>|null Cached primary business entity */
+    private ?array $primaryFacility = null;
+
+    /** @var bool Whether we've queried for the primary facility yet */
+    private bool $primaryFacilityQueried = false;
 
     public function __construct(
         private readonly ConfigAccessorInterface $configAccessor = new GlobalsAccessor()
     ) {
-        $this->isEnvConfigMode = $configAccessor instanceof EnvironmentConfigAccessor;
+        $this->isEnvConfigMode = ConfigFactory::isEnvConfigMode();
     }
 
-    // Module configuration options
-    public const CONFIG_OPTION_ENABLED = 'oce_onc_registration_enabled';
-
-    // Organization registration info
-    public const CONFIG_OPTION_ORG_NAME = 'oce_onc_registration_org_name';
-    public const CONFIG_OPTION_ORG_LOCATION = 'oce_onc_registration_org_location';
-    public const CONFIG_OPTION_ORG_NPI = 'oce_onc_registration_org_npi';
-    public const CONFIG_OPTION_FHIR_ENDPOINT = 'oce_onc_registration_fhir_endpoint';
-
-    // Registration status tracking
-    public const CONFIG_OPTION_REGISTRATION_DATE = 'oce_onc_registration_date';
-    public const CONFIG_OPTION_REGISTRATION_STATUS = 'oce_onc_registration_status';
+    /**
+     * Check if configuration is managed via environment variables
+     */
+    public function isEnvConfigMode(): bool
+    {
+        return $this->isEnvConfigMode;
+    }
 
     // Required OpenEMR global settings for ONC certification
     public const REQUIRED_GLOBALS = [
@@ -58,82 +65,103 @@ class GlobalConfig
     ];
 
     /**
-     * Check if configuration is managed via environment variables
+     * Check if preview mode is enabled (shows mock data for UI testing)
      */
-    public function isEnvConfigMode(): bool
+    public function isPreviewMode(): bool
     {
-        return $this->isEnvConfigMode;
+        return $this->configAccessor->getBoolean(self::CONFIG_PREVIEW_MODE, false);
     }
 
     /**
-     * Check if the module is enabled
-     */
-    public function isEnabled(): bool
-    {
-        return $this->configAccessor->getBoolean(self::CONFIG_OPTION_ENABLED, false);
-    }
-
-    /**
-     * Check if the module is properly configured (has required org info)
+     * Check if organization info is complete (has required org info)
      */
     public function isConfigured(): bool
     {
-        // FHIR endpoint is auto-detected, so only org name and NPI are required
         return $this->getOrgName() !== ''
             && $this->getOrgNpi() !== '';
     }
 
     /**
-     * Get organization name
+     * Get organization name (from primary business entity facility)
      */
     public function getOrgName(): string
     {
-        return $this->configAccessor->getString(self::CONFIG_OPTION_ORG_NAME, '');
+        $facility = $this->getPrimaryFacility();
+        $name = $facility['name'] ?? '';
+        return is_string($name) ? $name : '';
     }
 
     /**
-     * Get organization location/address
+     * Get organization location/address (from primary business entity facility)
      */
     public function getOrgLocation(): string
     {
-        return $this->configAccessor->getString(self::CONFIG_OPTION_ORG_LOCATION, '');
+        $facility = $this->getPrimaryFacility();
+        if ($facility === null) {
+            return '';
+        }
+
+        $street = $facility['street'] ?? '';
+        $city = $facility['city'] ?? '';
+        $state = $facility['state'] ?? '';
+        $postalCode = $facility['postal_code'] ?? '';
+
+        $parts = array_filter([
+            is_string($street) ? $street : '',
+            is_string($city) ? $city : '',
+            is_string($state) ? $state : '',
+            is_string($postalCode) ? $postalCode : '',
+        ]);
+
+        return implode(', ', $parts);
     }
 
     /**
-     * Get organization NPI number
+     * Get organization NPI number (from primary business entity facility)
      */
     public function getOrgNpi(): string
     {
-        return $this->configAccessor->getString(self::CONFIG_OPTION_ORG_NPI, '');
+        $facility = $this->getPrimaryFacility();
+        $npi = $facility['facility_npi'] ?? '';
+        return is_string($npi) ? $npi : '';
     }
 
     /**
-     * Get FHIR endpoint URL
+     * Get the primary business entity facility
+     *
+     * @return array<string, mixed>|null
+     */
+    private function getPrimaryFacility(): ?array
+    {
+        if ($this->primaryFacilityQueried) {
+            return $this->primaryFacility;
+        }
+
+        $this->primaryFacilityQueried = true;
+
+        $facilityService = new FacilityService();
+        $facility = $facilityService->getPrimaryBusinessEntity();
+
+        if (!is_array($facility)) {
+            return null;
+        }
+
+        /** @var array<string, mixed> $facility */
+        $this->primaryFacility = $facility;
+
+        return $this->primaryFacility;
+    }
+
+    /**
+     * Get FHIR endpoint URL (auto-detected from site_addr_oath)
      */
     public function getFhirEndpoint(): string
     {
-        $configured = $this->configAccessor->getString(self::CONFIG_OPTION_FHIR_ENDPOINT, '');
-        if ($configured !== '') {
-            return $configured;
+        $siteAddr = $this->configAccessor->getString('site_addr_oath', '');
+        if ($siteAddr === '') {
+            return '';
         }
-        // Auto-detect from OpenEMR configuration
-        return $this->detectFhirEndpoint();
-    }
-
-    /**
-     * Get registration submission date
-     */
-    public function getRegistrationDate(): string
-    {
-        return $this->configAccessor->getString(self::CONFIG_OPTION_REGISTRATION_DATE, '');
-    }
-
-    /**
-     * Get registration status
-     */
-    public function getRegistrationStatus(): string
-    {
-        return $this->configAccessor->getString(self::CONFIG_OPTION_REGISTRATION_STATUS, '');
+        return rtrim($siteAddr, '/') . '/apis/default/fhir/r4';
     }
 
     /**
@@ -153,75 +181,10 @@ class GlobalConfig
     }
 
     /**
-     * Detect FHIR endpoint URL from OpenEMR configuration
-     */
-    public function detectFhirEndpoint(): string
-    {
-        $siteAddr = $this->configAccessor->getString('site_addr_oath', '');
-        if ($siteAddr === '') {
-            return '';
-        }
-        return rtrim($siteAddr, '/') . '/apis/default/fhir/r4';
-    }
-
-    /**
      * Get value of an OpenEMR global setting
      */
     public function getGlobalValue(string $key): string
     {
         return $this->configAccessor->getString($key, '');
-    }
-
-    /**
-     * Get the global settings section configuration for the admin UI
-     *
-     * @return array<string, array<string, string|bool|int|array<string, string>>>
-     */
-    public function getGlobalSettingSectionConfiguration(): array
-    {
-        return [
-            self::CONFIG_OPTION_ENABLED => [
-                'title' => 'Enable ONC Registration Module',
-                'description' => 'Enable the ONC Registration helper module',
-                'type' => GlobalSetting::DATA_TYPE_BOOL,
-                'default' => false,
-            ],
-            self::CONFIG_OPTION_ORG_NAME => [
-                'title' => 'Organization Name',
-                'description' => 'Legal name of the healthcare organization',
-                'type' => GlobalSetting::DATA_TYPE_TEXT,
-                'default' => '',
-            ],
-            self::CONFIG_OPTION_ORG_LOCATION => [
-                'title' => 'Organization Location',
-                'description' => 'Full address of the organization',
-                'type' => GlobalSetting::DATA_TYPE_TEXT,
-                'default' => '',
-            ],
-            self::CONFIG_OPTION_ORG_NPI => [
-                'title' => 'Organization NPI',
-                'description' => 'National Provider Identifier (10-digit number)',
-                'type' => GlobalSetting::DATA_TYPE_TEXT,
-                'default' => '',
-            ],
-            self::CONFIG_OPTION_FHIR_ENDPOINT => [
-                'title' => 'FHIR Endpoint URL (Optional)',
-                'description' => 'Override auto-detected FHIR endpoint (leave empty to use default)',
-                'type' => GlobalSetting::DATA_TYPE_TEXT,
-                'default' => '',
-            ],
-            self::CONFIG_OPTION_REGISTRATION_DATE => [
-                'title' => 'Registration Date',
-                'description' => 'Date registration was submitted (auto-filled)',
-                'type' => GlobalSetting::DATA_TYPE_TEXT,
-                'default' => '',
-            ],
-            self::CONFIG_OPTION_REGISTRATION_STATUS => [
-                'title' => 'Registration Status',
-                'description' => 'Current registration status',
-                'type' => GlobalSetting::DATA_TYPE_TEXT,
-                'default' => '',
-            ],
-        ];
     }
 }

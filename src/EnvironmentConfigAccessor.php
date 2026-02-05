@@ -5,7 +5,7 @@
  *
  * @package   OpenCoreEMR
  * @link      http://www.open-emr.org
- * @author    Your Name <your.email@opencoreemr.com>
+ * @author    Michael A. Smith <michael@opencoreemr.com>
  * @copyright Copyright (c) 2026 OpenCoreEMR Inc
  * @license   GNU General Public License 3
  */
@@ -13,79 +13,80 @@
 namespace OpenCoreEMR\Modules\OncRegistration;
 
 use OpenEMR\Core\Kernel;
-use Symfony\Component\HttpFoundation\ParameterBag;
 
 /**
  * Reads module configuration from environment variables.
  *
- * This accessor is used when {VENDOR_PREFIX}_{MODULE_NAME}_ENV_CONFIG=1 is set,
- * bypassing the database-backed globals system entirely for module config.
- * OpenEMR system values (OE_SITE_DIR, webroot, etc.) are still delegated
- * to GlobalsAccessor since they are not module configuration.
+ * For module-specific config keys (defined in KEY_MAP), this accessor checks
+ * environment variables first. For OpenEMR system values (webroot, site_addr_oath,
+ * etc.), it delegates to GlobalsAccessor.
+ *
+ * Environment variables take precedence over database-backed globals for module
+ * config, allowing container-friendly deployments to override settings.
  *
  * @internal Use ConfigFactory::createConfigAccessor() instead of instantiating directly
  */
 class EnvironmentConfigAccessor implements ConfigAccessorInterface
 {
     /**
-     * Maps internal config keys ({vendor_prefix}_onc-registration_*) to env var names ({VENDOR_PREFIX}_{MODULENAME}_*)
-     *
-     * Override this in your implementation to map your specific config keys.
-     * Example:
-     *   GlobalConfig::CONFIG_OPTION_ENABLED => '{VENDOR_PREFIX}_{MODULENAME}_ENABLED',
-     *   GlobalConfig::CONFIG_OPTION_API_KEY => '{VENDOR_PREFIX}_{MODULENAME}_API_KEY',
+     * Maps module config keys to environment variable names.
      *
      * @var array<string, string>
      */
     private const KEY_MAP = [
-        GlobalConfig::CONFIG_OPTION_ENABLED => '{VENDOR_PREFIX}_{MODULENAME}_ENABLED',
-        // Add your config option mappings here
-        // GlobalConfig::CONFIG_OPTION_API_KEY => '{VENDOR_PREFIX}_{MODULENAME}_API_KEY',
-        // GlobalConfig::CONFIG_OPTION_API_SECRET => '{VENDOR_PREFIX}_{MODULENAME}_API_SECRET',
+        GlobalConfig::CONFIG_PREVIEW_MODE => 'OCE_ONC_REGISTRATION_PREVIEW',
     ];
 
-    /** @var ParameterBag<string, mixed> */
-    private readonly ParameterBag $envBag;
     private readonly GlobalsAccessor $globalsAccessor;
 
     public function __construct(?GlobalsAccessor $globalsAccessor = null)
     {
         $this->globalsAccessor = $globalsAccessor ?? new GlobalsAccessor();
-        $this->envBag = $this->buildEnvBag();
     }
 
     /**
-     * Build a ParameterBag from environment variables
-     *
-     * @return ParameterBag<string, mixed>
+     * Get the environment variable name for a config key, if mapped
      */
-    private function buildEnvBag(): ParameterBag
+    private function getEnvVar(string $key): ?string
     {
-        $params = [];
-        foreach (self::KEY_MAP as $configKey => $envVar) {
-            $value = getenv($envVar);
-            if ($value !== false) {
-                $params[$configKey] = $value;
-            }
+        return self::KEY_MAP[$key] ?? null;
+    }
+
+    /**
+     * Check environment variable for a module config key
+     *
+     * @return array{found: bool, value: string}
+     */
+    private function checkEnvVar(string $key): array
+    {
+        $envVar = $this->getEnvVar($key);
+        if ($envVar === null) {
+            return ['found' => false, 'value' => ''];
         }
-        return new ParameterBag($params);
+
+        $value = getenv($envVar);
+        if ($value === false) {
+            return ['found' => false, 'value' => ''];
+        }
+
+        return ['found' => true, 'value' => $value];
     }
 
     public function get(string $key, mixed $default = null): mixed
     {
-        // Check if this is a module config key
-        if (isset(self::KEY_MAP[$key])) {
-            return $this->envBag->get($key, $default);
+        $env = $this->checkEnvVar($key);
+        if ($env['found']) {
+            return $env['value'];
         }
 
-        // For OpenEMR system values, delegate to GlobalsAccessor
         return $this->globalsAccessor->get($key, $default);
     }
 
     public function getString(string $key, string $default = ''): string
     {
-        if (isset(self::KEY_MAP[$key])) {
-            return $this->envBag->getString($key, $default);
+        $env = $this->checkEnvVar($key);
+        if ($env['found']) {
+            return $env['value'];
         }
 
         return $this->globalsAccessor->getString($key, $default);
@@ -93,8 +94,9 @@ class EnvironmentConfigAccessor implements ConfigAccessorInterface
 
     public function getBoolean(string $key, bool $default = false): bool
     {
-        if (isset(self::KEY_MAP[$key])) {
-            return $this->envBag->getBoolean($key, $default);
+        $env = $this->checkEnvVar($key);
+        if ($env['found']) {
+            return filter_var($env['value'], FILTER_VALIDATE_BOOLEAN);
         }
 
         return $this->globalsAccessor->getBoolean($key, $default);
@@ -102,8 +104,9 @@ class EnvironmentConfigAccessor implements ConfigAccessorInterface
 
     public function getInt(string $key, int $default = 0): int
     {
-        if (isset(self::KEY_MAP[$key])) {
-            return $this->envBag->getInt($key, $default);
+        $env = $this->checkEnvVar($key);
+        if ($env['found']) {
+            return is_numeric($env['value']) ? (int) $env['value'] : $default;
         }
 
         return $this->globalsAccessor->getInt($key, $default);
@@ -111,8 +114,9 @@ class EnvironmentConfigAccessor implements ConfigAccessorInterface
 
     public function has(string $key): bool
     {
-        if (isset(self::KEY_MAP[$key])) {
-            return $this->envBag->has($key);
+        $env = $this->checkEnvVar($key);
+        if ($env['found']) {
+            return true;
         }
 
         return $this->globalsAccessor->has($key);

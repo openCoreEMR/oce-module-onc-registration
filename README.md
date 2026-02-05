@@ -4,12 +4,14 @@ An OpenEMR module that helps healthcare organizations register their installatio
 
 ## Features
 
+- **Registration Status Verification**: Automatically checks if your FHIR endpoint is listed on the OpenEMR Foundation's published Service Base URLs page
 - **Configuration Validation**: Verifies that required OpenEMR global settings are properly configured for ONC certification
 - **Organization Info Management**: Collects and validates organization details (name, location, NPI, FHIR endpoint)
 - **NPI Validation**: Validates National Provider Identifier numbers using the Luhn algorithm
 - **FHIR Endpoint Detection**: Automatically detects the FHIR API endpoint from OpenEMR configuration
 - **Registration Email Generation**: Creates pre-filled registration emails for the OpenEMR Foundation
-- **Status Tracking**: Records when registration was submitted
+- **Preview Mode**: View the dashboard with mock data showing a "registration complete" state for UI testing
+- **Collapsible Dashboard**: All sections are collapsible; cards auto-collapse when registration is verified
 
 ## Requirements
 
@@ -33,32 +35,60 @@ composer require opencoreemr/oce-module-onc-registration
 
 ## Configuration
 
+### Via Admin UI
+
 After enabling the module:
 
 1. Go to **Administration > Globals > ONC Registration**
-2. Enable the module
-3. Fill in your organization details:
-   - Organization Name
-   - Organization Location (address)
-   - Organization NPI (10-digit number)
-   - FHIR Endpoint URL (auto-detected if empty)
+2. Configure module settings:
+   - **Preview Mode**: Enable to show mock data for UI testing
+
+Organization details are configured in **Administration > Globals > Features**:
+- Organization Name
+- Organization Location (address)
+- Organization NPI (10-digit number)
+
+The FHIR endpoint is auto-detected from the Site Address setting.
+
+### Via Environment Variables
+
+For container deployments, configure via environment variables:
+
+```bash
+# Enable environment config mode (disables admin UI editing)
+export OCE_ONC_REGISTRATION_ENV_CONFIG=1
+
+# Module settings
+export OCE_ONC_REGISTRATION_PREVIEW=true   # Enable preview mode
+```
+
+When `OCE_ONC_REGISTRATION_ENV_CONFIG=1` is set, the admin UI displays "This module is configured via environment variables" instead of editable fields.
 
 ## Usage
 
 Access the module via **Administration > ONC Registration** in the OpenEMR menu.
 
-The dashboard shows:
+The dashboard displays five collapsible cards:
 
-1. **Configuration Checklist**: Verifies required OpenEMR settings
+1. **Registration Status**: Shows whether your installation is registered
+   - Verified: Your FHIR endpoint appears on the published URLs page
+   - Ready to Submit: All requirements met, ready to register
+   - Not Ready: Configuration incomplete
+
+2. **About ONC Certification**: Overview of certification requirements
+
+3. **Configuration Checklist**: Verifies required OpenEMR settings
    - FHIR REST API enabled
    - Hash algorithms set to SHA512
    - Audit log encryption enabled
 
-2. **Organization Information**: Your registration details with NPI validation
+4. **Organization Information**: Your registration details with NPI validation
 
-3. **Submit Registration**: Tools to send registration to OpenEMR Foundation
+5. **Submit Registration**: Tools to send registration to OpenEMR Foundation
    - One-click email generation
    - Copy/paste option for manual submission
+
+When registration is verified, all cards except Registration Status auto-collapse.
 
 ## ONC Certification Requirements
 
@@ -81,6 +111,9 @@ composer install
 
 # Run code quality checks
 composer check
+
+# Run PHPStan at level 10
+composer phpstan
 
 # Run tests
 composer test

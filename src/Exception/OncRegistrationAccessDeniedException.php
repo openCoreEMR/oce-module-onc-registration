@@ -5,7 +5,7 @@
  *
  * @package   OpenCoreEMR
  * @link      http://www.open-emr.org
- * @author    Your Name <your.email@opencoreemr.com>
+ * @author    Michael A. Smith <michael@opencoreemr.com>
  * @copyright Copyright (c) 2026 OpenCoreEMR Inc
  * @license   GNU General Public License 3
  */
