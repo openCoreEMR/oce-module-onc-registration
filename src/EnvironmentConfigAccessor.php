@@ -37,11 +37,8 @@ class EnvironmentConfigAccessor implements ConfigAccessorInterface
         GlobalConfig::CONFIG_PREVIEW_MODE => 'OCE_ONC_REGISTRATION_PREVIEW',
     ];
 
-    private readonly GlobalsAccessor $globalsAccessor;
-
-    public function __construct(?GlobalsAccessor $globalsAccessor = null)
+    public function __construct(private readonly GlobalsAccessor $globalsAccessor = new GlobalsAccessor())
     {
-        $this->globalsAccessor = $globalsAccessor ?? new GlobalsAccessor();
     }
 
     /**

@@ -46,16 +46,14 @@ class DashboardController
     {
         return match ($action) {
             'validate-npi' => $this->validateNpi($params),
-            default => $this->showDashboard($params),
+            default => $this->showDashboard(),
         };
     }
 
     /**
      * Show the main dashboard
-     *
-     * @param array<string, mixed> $params Request parameters
      */
-    private function showDashboard(array $params = []): Response
+    private function showDashboard(): Response
     {
         $this->logger->debug('Showing ONC Registration dashboard');
 

@@ -30,6 +30,7 @@
     "OpenEMR\\Events\\Globals\\GlobalsInitializedEvent",
     "OpenEMR\\Events\\PatientDocuments\\PatientDocumentEvent",
     "OpenEMR\\Menu\\MenuEvent",
+    "OpenEMR\\Services\\FacilityService",
     "OpenEMR\\Services\\Globals\\GlobalSetting",
     "Symfony\\Component\\Console\\Command\\Command",
     "Symfony\\Component\\Console\\Input\\InputInterface",

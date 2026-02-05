@@ -112,7 +112,8 @@ class ModuleInstaller
             $moduleName
         ]);
 
-        $moduleIdResult = QueryUtils::querySingleRow("SELECT mod_id FROM modules WHERE mod_directory = ?", [$moduleName]);
+        $query = "SELECT mod_id FROM modules WHERE mod_directory = ?";
+        $moduleIdResult = QueryUtils::querySingleRow($query, [$moduleName]);
         if (!is_array($moduleIdResult) || !is_numeric($moduleIdResult['mod_id'] ?? null)) {
             throw new \RuntimeException('Failed to retrieve module ID after registration');
         }

@@ -108,14 +108,67 @@ public function dispatch(string $action, array $params): Response
 - `attr` - Sanitize for HTML attributes
 - `xlj` - Translate and JSON-encode for JavaScript
 
+## Development Workflow
+
+Use the **Taskfile** for Docker and module operations. Install: `brew install go-task`
+
+```bash
+task dev:start          # Start Docker environment
+task module:install     # Install and enable module in OpenEMR
+task dev:browse         # Open OpenEMR in browser
+task dev:port           # Show assigned ports
+task dev:logs           # View OpenEMR logs
+task dev:shell          # Shell into OpenEMR container
+task dev:stop           # Stop Docker (keeps data)
+```
+
 ## Code Quality
 
 Run before committing:
 
 ```bash
-composer check      # All quality checks
-composer phpstan    # PHPStan at level 10
-composer test       # PHPUnit tests
+pre-commit run -a   # Run all checks (PHPCS, PHPStan, Rector, etc.)
+composer test       # Run PHPUnit tests
+```
+
+## CI Checks
+
+### Conventional Commit Titles
+
+PR titles must follow conventional commits format with **lowercase subject**:
+
+```
+type: lowercase description
+```
+
+Examples:
+- `fix: resolve phpstan errors` (correct)
+- `fix: Resolve PHPStan errors` (WRONG - uppercase)
+- `feat: add preview mode` (correct)
+
+### Composer Require Checker
+
+CI runs `composer-require-checker` to verify all used symbols are declared as dependencies.
+
+**When adding new OpenEMR classes**, whitelist them in `.composer-require-checker.json`:
+
+```json
+{
+  "symbol-whitelist": [
+    "OpenEMR\\Services\\FacilityService",
+    ...
+  ]
+}
+```
+
+**When using PHP extensions** (like `ctype_digit`), add to `composer.json`:
+
+```json
+{
+  "require": {
+    "ext-ctype": "*"
+  }
+}
 ```
 
 ## Security Checklist
