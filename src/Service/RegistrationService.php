@@ -76,6 +76,9 @@ EMAIL;
     /**
      * Check if registration info is complete
      *
+     * FHIR endpoint is auto-detected from site_addr_oath, so it's not listed as missing.
+     * Only org name, location, and NPI are user-provided required fields.
+     *
      * @return array{complete: bool, missing: array<string>}
      */
     public function checkRegistrationInfo(): array
@@ -94,8 +97,9 @@ EMAIL;
             $missing[] = 'Organization NPI';
         }
 
+        // FHIR endpoint is auto-detected, but warn if detection fails
         if ($this->config->getFhirEndpoint() === '') {
-            $missing[] = 'FHIR Endpoint URL';
+            $missing[] = 'FHIR Endpoint (configure site_addr_oath in Globals > Connectors)';
         }
 
         return [

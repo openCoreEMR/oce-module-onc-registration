@@ -78,9 +78,9 @@ class GlobalConfig
      */
     public function isConfigured(): bool
     {
+        // FHIR endpoint is auto-detected, so only org name and NPI are required
         return $this->getOrgName() !== ''
-            && $this->getOrgNpi() !== ''
-            && $this->getFhirEndpoint() !== '';
+            && $this->getOrgNpi() !== '';
     }
 
     /**
@@ -205,8 +205,8 @@ class GlobalConfig
                 'default' => '',
             ],
             self::CONFIG_OPTION_FHIR_ENDPOINT => [
-                'title' => 'FHIR Endpoint URL',
-                'description' => 'FHIR API base URL (auto-detected if empty)',
+                'title' => 'FHIR Endpoint URL (Optional)',
+                'description' => 'Override auto-detected FHIR endpoint (leave empty to use default)',
                 'type' => GlobalSetting::DATA_TYPE_TEXT,
                 'default' => '',
             ],
