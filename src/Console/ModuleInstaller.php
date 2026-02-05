@@ -36,7 +36,11 @@ class ModuleInstaller
     {
         $sql = "SELECT * FROM modules WHERE mod_directory = ?";
         $result = QueryUtils::querySingleRow($sql, [$moduleName]);
-        return $result ?: null;
+        if (!is_array($result)) {
+            return null;
+        }
+        /** @var array<string, mixed> $result */
+        return $result;
     }
 
     /**
@@ -81,8 +85,11 @@ class ModuleInstaller
             $name = $moduleName;
         }
 
-        $maxId = QueryUtils::querySingleRow("SELECT MAX(section_id) as max_id FROM module_acl_sections", []);
-        $sectionId = ($maxId['max_id'] ?? 0) + 1;
+        $maxIdResult = QueryUtils::querySingleRow("SELECT MAX(section_id) as max_id FROM module_acl_sections", []);
+        $maxId = is_array($maxIdResult) && is_numeric($maxIdResult['max_id'] ?? null)
+            ? (int) $maxIdResult['max_id']
+            : 0;
+        $sectionId = $maxId + 1;
 
         $sql = "INSERT INTO modules SET
                 mod_id = ?,
@@ -105,13 +112,17 @@ class ModuleInstaller
             $moduleName
         ]);
 
-        $moduleId = QueryUtils::querySingleRow("SELECT mod_id FROM modules WHERE mod_directory = ?", [$moduleName]);
+        $moduleIdResult = QueryUtils::querySingleRow("SELECT mod_id FROM modules WHERE mod_directory = ?", [$moduleName]);
+        if (!is_array($moduleIdResult) || !is_numeric($moduleIdResult['mod_id'] ?? null)) {
+            throw new \RuntimeException('Failed to retrieve module ID after registration');
+        }
+        $modId = (int) $moduleIdResult['mod_id'];
         QueryUtils::sqlStatementThrowException(
             "INSERT INTO module_acl_sections VALUES (?, ?, 0, ?, ?)",
-            [$moduleId['mod_id'], $name, strtolower($moduleName), $moduleId['mod_id']]
+            [$modId, $name, strtolower($moduleName), $modId]
         );
 
-        $this->output->writeln("  Registered with ID: <info>{$moduleId['mod_id']}</info>");
+        $this->output->writeln("  Registered with ID: <info>{$modId}</info>");
     }
 
     /**
@@ -250,7 +261,12 @@ class ModuleInstaller
     public function listModules(): array
     {
         $sql = "SELECT mod_id, mod_name, mod_directory, mod_active, sql_run, type FROM modules ORDER BY mod_directory";
-        return QueryUtils::fetchRecords($sql, []);
+        $result = QueryUtils::fetchRecords($sql, []);
+        if (!is_array($result)) {
+            return [];
+        }
+        /** @var array<int, array<string, mixed>> $result */
+        return $result;
     }
 
     /**

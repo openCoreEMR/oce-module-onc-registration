@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Handles ONC registration submission.
+ * Handles ONC registration submission and verification.
  *
  * @package   OpenCoreEMR
  * @link      http://www.open-emr.org
@@ -13,15 +13,88 @@
 namespace OpenCoreEMR\Modules\OncRegistration\Service;
 
 use OpenCoreEMR\Modules\OncRegistration\GlobalConfig;
+use OpenEMR\Common\Logging\SystemLogger;
 
 class RegistrationService
 {
     public const REGISTRATION_EMAIL = 'hello@open-emr.org';
     public const REGISTRATION_SUBJECT = 'ONC registration';
 
+    /** @var array{registered: bool, error: ?string}|null Cached verification result */
+    private ?array $verificationCache = null;
+
+    private readonly SystemLogger $logger;
+
     public function __construct(
         private readonly GlobalConfig $config
     ) {
+        $this->logger = new SystemLogger();
+    }
+
+    /**
+     * Check if this installation's FHIR endpoint is registered on the published URLs page
+     *
+     * @return array{registered: bool, error: ?string}
+     */
+    public function verifyRegistration(): array
+    {
+        if ($this->verificationCache !== null) {
+            return $this->verificationCache;
+        }
+
+        $fhirEndpoint = $this->config->getFhirEndpoint();
+        if ($fhirEndpoint === '') {
+            $this->verificationCache = [
+                'registered' => false,
+                'error' => 'FHIR endpoint not configured',
+            ];
+            return $this->verificationCache;
+        }
+
+        $pageContent = $this->fetchPublishedUrlsPage();
+        if ($pageContent === null) {
+            $this->verificationCache = [
+                'registered' => false,
+                'error' => 'Unable to fetch published URLs page',
+            ];
+            return $this->verificationCache;
+        }
+
+        // Check if the FHIR endpoint appears on the page
+        // The endpoint might be listed with or without trailing slash
+        $endpointNormalized = rtrim($fhirEndpoint, '/');
+        $isRegistered = str_contains($pageContent, $endpointNormalized)
+            || str_contains($pageContent, $endpointNormalized . '/');
+
+        $this->verificationCache = [
+            'registered' => $isRegistered,
+            'error' => null,
+        ];
+
+        return $this->verificationCache;
+    }
+
+    /**
+     * Fetch the published Service Base URLs page content
+     */
+    private function fetchPublishedUrlsPage(): ?string
+    {
+        $url = $this->getPublishedUrlsPage();
+
+        $context = stream_context_create([
+            'http' => [
+                'timeout' => 10,
+                'user_agent' => 'OpenEMR ONC Registration Module',
+            ],
+        ]);
+
+        $content = @file_get_contents($url, false, $context);
+        if ($content === false) {
+            $this->logger->error('Failed to fetch published URLs page', ['url' => $url]);
+            return null;
+        }
+
+        return $content;
     }
 
     /**
@@ -76,8 +149,9 @@ EMAIL;
     /**
      * Check if registration info is complete
      *
-     * FHIR endpoint is auto-detected from site_addr_oath, so it's not listed as missing.
-     * Only org name, location, and NPI are user-provided required fields.
+     * All organization info is auto-detected from the primary business entity
+     * facility and site_addr_oath. If info is missing, point users to the
+     * appropriate configuration location.
      *
      * @return array{complete: bool, missing: array<string>}
      */
@@ -86,18 +160,17 @@ EMAIL;
         $missing = [];
 
         if ($this->config->getOrgName() === '') {
-            $missing[] = 'Organization Name';
+            $missing[] = 'Organization Name (set in Admin > Facilities on your primary facility)';
         }
 
         if ($this->config->getOrgLocation() === '') {
-            $missing[] = 'Organization Location';
+            $missing[] = 'Organization Location (set address in Admin > Facilities)';
         }
 
         if ($this->config->getOrgNpi() === '') {
-            $missing[] = 'Organization NPI';
+            $missing[] = 'Organization NPI (set Facility NPI in Admin > Facilities)';
         }
 
-        // FHIR endpoint is auto-detected, but warn if detection fails
         if ($this->config->getFhirEndpoint() === '') {
             $missing[] = 'FHIR Endpoint (configure site_addr_oath in Globals > Connectors)';
         }

@@ -54,20 +54,9 @@ class Bootstrap
      */
     public function subscribeToEvents(): void
     {
-        $this->addGlobalSettings();
         $this->addMenuItems();
-
-        if (!$this->globalsConfig->isConfigured()) {
-            $this->logger->debug('ONC Registration module is not configured.');
-            return;
-        }
-
-        if (!$this->globalsConfig->isEnabled()) {
-            $this->logger->debug('ONC Registration module is disabled.');
-            return;
-        }
-
-        $this->logger->debug('ONC Registration module is enabled and configured');
+        $this->addGlobalSettings();
+        $this->logger->debug('ONC Registration module initialized');
     }
 
     /**
@@ -77,19 +66,21 @@ class Bootstrap
     {
         $this->eventDispatcher->addListener(
             GlobalsInitializedEvent::EVENT_HANDLE,
-            $this->addGlobalSettingsSection(...)
+            $this->registerGlobalSettings(...)
         );
     }
 
     /**
-     * Add global settings section to OpenEMR administration
+     * Register module settings in OpenEMR globals
      */
-    public function addGlobalSettingsSection(GlobalsInitializedEvent $event): void
+    public function registerGlobalSettings(GlobalsInitializedEvent $event): void
     {
         $service = $event->getGlobalsService();
         $section = xlt('ONC Registration');
+
         $service->createSection($section);
 
+        // In env config mode, show informational message instead of editable fields
         if ($this->globalsConfig->isEnvConfigMode()) {
             $setting = new GlobalSetting(
                 xlt('Configuration Managed Externally'),
@@ -100,29 +91,19 @@ class Bootstrap
             );
             $setting->addFieldOption(
                 GlobalSetting::DATA_TYPE_OPTION_RENDER_CALLBACK,
-                static fn() => xlt(
-                    'This module is configured via environment variables by deployment administrators.'
-                )
+                static fn() => xlt('This module is managed by deployment administrators.')
             );
             $service->appendToSection($section, 'oce_onc_registration_env_config_notice', $setting);
             return;
         }
 
-        $settings = $this->globalsConfig->getGlobalSettingSectionConfiguration();
-
-        foreach ($settings as $key => $config) {
-            $service->appendToSection(
-                $section,
-                $key,
-                new GlobalSetting(
-                    xlt($config['title']),
-                    $config['type'],
-                    $config['default'],
-                    xlt($config['description']),
-                    true
-                )
-            );
-        }
+        $setting = new GlobalSetting(
+            xlt('Preview Mode (show mock data)'),
+            GlobalSetting::DATA_TYPE_BOOL,
+            '0',
+            xlt('Enable to show the dashboard with mock data for UI testing')
+        );
+        $service->appendToSection($section, GlobalConfig::CONFIG_PREVIEW_MODE, $setting);
     }
 
     /**
@@ -141,10 +122,6 @@ class Bootstrap
      */
     public function addModuleMenuItem(MenuEvent $event): void
     {
-        if (!$this->globalsConfig->isEnabled()) {
-            return;
-        }
-
         $menu = $event->getMenu();
 
         $menuItem = new \stdClass();

@@ -46,16 +46,23 @@ class DashboardController
     {
         return match ($action) {
             'validate-npi' => $this->validateNpi($params),
-            default => $this->showDashboard(),
+            default => $this->showDashboard($params),
         };
     }
 
     /**
      * Show the main dashboard
+     *
+     * @param array<string, mixed> $params Request parameters
      */
-    private function showDashboard(): Response
+    private function showDashboard(array $params = []): Response
     {
         $this->logger->debug('Showing ONC Registration dashboard');
+
+        // Preview mode shows mock data for UI testing
+        if ($this->config->isPreviewMode()) {
+            return $this->showPreviewDashboard();
+        }
 
         // Get configuration validation results
         $configValidation = $this->configValidator->validateRequiredSettings();
@@ -63,6 +70,9 @@ class DashboardController
 
         // Get registration info status
         $registrationInfo = $this->registrationService->checkRegistrationInfo();
+
+        // Check if already registered on published URLs page
+        $registrationVerification = $this->registrationService->verifyRegistration();
 
         // Validate NPI if provided
         $npiValidation = null;
@@ -81,22 +91,84 @@ class DashboardController
             'validation_summary' => $validationSummary,
             'all_settings_valid' => $this->configValidator->allSettingsValid(),
 
-            // Registration info
+            // Organization info (auto-detected)
             'org_name' => $this->config->getOrgName(),
             'org_location' => $this->config->getOrgLocation(),
             'org_npi' => $npi,
             'fhir_endpoint' => $this->config->getFhirEndpoint(),
-            'detected_fhir_endpoint' => $this->config->detectFhirEndpoint(),
             'registration_info' => $registrationInfo,
+            'registration_verification' => $registrationVerification,
             'npi_validation' => $npiValidation,
-
-            // Registration status
-            'registration_date' => $this->config->getRegistrationDate(),
-            'registration_status' => $this->config->getRegistrationStatus(),
 
             // Email generation
             'mailto_link' => $this->registrationService->generateMailtoLink(),
             'email_body' => $this->registrationService->generateEmailBody(),
+            'registration_email' => RegistrationService::REGISTRATION_EMAIL,
+            'registration_subject' => RegistrationService::REGISTRATION_SUBJECT,
+            'published_urls_page' => $this->registrationService->getPublishedUrlsPage(),
+        ]);
+
+        return new Response($content);
+    }
+
+    /**
+     * Show dashboard with mock data for UI preview
+     */
+    private function showPreviewDashboard(): Response
+    {
+        $this->logger->debug('Showing ONC Registration dashboard in preview mode');
+
+        $mockNpi = '1234567893';
+        $mockFhirEndpoint = 'https://emr.example.com/apis/default/fhir/r4';
+
+        // Mock all settings as valid
+        $configValidation = [];
+        foreach (GlobalConfig::REQUIRED_GLOBALS as $key => $setting) {
+            $configValidation[$key] = [
+                'description' => $setting['description'],
+                'required' => $setting['required_value'],
+                'actual' => $setting['required_value'],
+                'passed' => true,
+            ];
+        }
+
+        $mockEmailBody = <<<EMAIL
+Organization Name: Acme Medical Center
+
+Organization Location: 123 Healthcare Blvd, Springfield, IL 62701
+
+Organization NPI: {$mockNpi}
+
+FHIR Endpoint URL: {$mockFhirEndpoint}
+
+---
+Submitted via ONC Registration Module
+EMAIL;
+
+        $content = $this->twig->render('dashboard/index.html.twig', [
+            'title' => 'ONC Registration (Preview)',
+            'csrf_token' => CsrfUtils::collectCsrfToken(),
+            'webroot' => $this->config->getWebroot(),
+
+            // All config valid
+            'config_validation' => $configValidation,
+            'validation_summary' => ['total' => 4, 'passed' => 4, 'failed' => 0],
+            'all_settings_valid' => true,
+
+            // Mock organization info
+            'org_name' => 'Acme Medical Center',
+            'org_location' => '123 Healthcare Blvd, Springfield, IL 62701',
+            'org_npi' => $mockNpi,
+            'fhir_endpoint' => $mockFhirEndpoint,
+            'registration_info' => ['complete' => true, 'missing' => []],
+            'registration_verification' => ['registered' => true, 'error' => null],
+            'npi_validation' => ['valid' => true, 'npi' => $mockNpi],
+
+            // Mock email
+            'mailto_link' => 'mailto:' . RegistrationService::REGISTRATION_EMAIL
+                . '?subject=' . rawurlencode(RegistrationService::REGISTRATION_SUBJECT)
+                . '&body=' . rawurlencode($mockEmailBody),
+            'email_body' => $mockEmailBody,
             'registration_email' => RegistrationService::REGISTRATION_EMAIL,
             'registration_subject' => RegistrationService::REGISTRATION_SUBJECT,
             'published_urls_page' => $this->registrationService->getPublishedUrlsPage(),

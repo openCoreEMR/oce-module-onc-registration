@@ -5,7 +5,7 @@
  *
  * @package   OpenCoreEMR
  * @link      http://www.open-emr.org
- * @author    Your Name <your.email@opencoreemr.com>
+ * @author    Michael A. Smith <michael@opencoreemr.com>
  * @copyright Copyright (c) 2026 OpenCoreEMR Inc
  * @license   GNU General Public License 3
  */
@@ -16,12 +16,11 @@ use OpenEMR\Common\Database\QueryUtils;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Prevents access to module web endpoints when the module is not properly installed and enabled.
+ * Prevents access to module web endpoints when the module is not properly installed.
  *
- * This guard checks three conditions:
+ * This guard checks:
  * 1. Module is registered in OpenEMR's modules table
  * 2. Module is enabled in module management (mod_active = 1)
- * 3. Module's own 'enabled' global setting is turned on
  *
  * If any condition fails, returns a 404 response to avoid leaking information
  * about the module's presence.
@@ -32,13 +31,11 @@ class ModuleAccessGuard
      * Check if the module is accessible and return a 404 response if not.
      *
      * @param string $moduleDirectory The module directory name (e.g., 'oce-module-onc-registration')
-     * @param ConfigAccessorInterface|null $configAccessor Optional config accessor for testing
      * @param (callable(string): bool)|null $moduleActiveChecker Optional callable for testing
      * @return Response|null Returns 404 Response if access denied, null if access allowed
      */
     public static function check(
         string $moduleDirectory,
-        ?ConfigAccessorInterface $configAccessor = null,
         ?callable $moduleActiveChecker = null
     ): ?Response {
         // Check module registration and enabled status in modules table
@@ -47,12 +44,6 @@ class ModuleAccessGuard
             : self::isModuleActive($moduleDirectory);
 
         if (!$isActive) {
-            return self::createNotFoundResponse();
-        }
-
-        // Check module's own enabled setting (respects env config mode)
-        $configAccessor ??= ConfigFactory::createConfigAccessor();
-        if (!$configAccessor->getBoolean(GlobalConfig::CONFIG_OPTION_ENABLED, false)) {
             return self::createNotFoundResponse();
         }
 
@@ -74,7 +65,10 @@ class ModuleAccessGuard
             }
 
             // Check if active (mod_active = 1)
-            return (int) $result === 1;
+            if (is_numeric($result)) {
+                return (int) $result === 1;
+            }
+            return false;
         } catch (\Throwable) {
             // Database error - fail closed (deny access)
             return false;

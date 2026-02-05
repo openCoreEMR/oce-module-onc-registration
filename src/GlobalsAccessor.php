@@ -11,7 +11,7 @@
  *
  * @package   OpenCoreEMR
  * @link      http://www.open-emr.org
- * @author    Your Name <your.email@opencoreemr.com>
+ * @author    Michael A. Smith <michael@opencoreemr.com>
  * @copyright Copyright (c) 2026 OpenCoreEMR Inc
  * @license   GNU General Public License 3
  */
@@ -59,7 +59,13 @@ class GlobalsAccessor implements ConfigAccessorInterface
     public function getString(string $key, string $default = ''): string
     {
         $value = $this->get($key, $default);
-        return is_string($value) ? $value : (string)$value;
+        if (is_string($value)) {
+            return $value;
+        }
+        if (is_scalar($value)) {
+            return (string) $value;
+        }
+        return $default;
     }
 
     /**
@@ -81,7 +87,13 @@ class GlobalsAccessor implements ConfigAccessorInterface
     public function getInt(string $key, int $default = 0): int
     {
         $value = $this->get($key, $default);
-        return is_int($value) ? $value : (int)$value;
+        if (is_int($value)) {
+            return $value;
+        }
+        if (is_numeric($value)) {
+            return (int) $value;
+        }
+        return $default;
     }
 
     /**
@@ -91,6 +103,7 @@ class GlobalsAccessor implements ConfigAccessorInterface
      */
     public function all(): array
     {
+        /** @var array<string, mixed> $GLOBALS */
         return $GLOBALS;
     }
 
