@@ -83,6 +83,7 @@ class DashboardController
             'title' => 'ONC Registration',
             'csrf_token' => CsrfUtils::collectCsrfToken(),
             'webroot' => $this->config->getWebroot(),
+            'module_assets_path' => $this->config->getModuleAssetsPath(),
 
             // Configuration validation
             'config_validation' => $configValidation,
@@ -104,6 +105,7 @@ class DashboardController
             'registration_email' => RegistrationService::REGISTRATION_EMAIL,
             'registration_subject' => RegistrationService::REGISTRATION_SUBJECT,
             'published_urls_page' => $this->registrationService->getPublishedUrlsPage(),
+            'onc_requirements_page' => $this->registrationService->getOncRequirementsPage(),
         ]);
 
         return new Response($content);
@@ -147,6 +149,7 @@ EMAIL;
             'title' => 'ONC Registration (Preview)',
             'csrf_token' => CsrfUtils::collectCsrfToken(),
             'webroot' => $this->config->getWebroot(),
+            'module_assets_path' => $this->config->getModuleAssetsPath(),
 
             // All config valid
             'config_validation' => $configValidation,
@@ -170,6 +173,7 @@ EMAIL;
             'registration_email' => RegistrationService::REGISTRATION_EMAIL,
             'registration_subject' => RegistrationService::REGISTRATION_SUBJECT,
             'published_urls_page' => $this->registrationService->getPublishedUrlsPage(),
+            'onc_requirements_page' => $this->registrationService->getOncRequirementsPage(),
         ]);
 
         return new Response($content);

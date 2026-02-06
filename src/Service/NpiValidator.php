@@ -26,12 +26,8 @@ class NpiValidator
      */
     public function validate(string $npi): array
     {
-        // Remove any spaces or dashes
-        $npi = preg_replace('/[\s\-]/', '', $npi);
-
-        if ($npi === null) {
-            return ['valid' => false, 'error' => 'Invalid characters in NPI'];
-        }
+        // Remove any spaces or dashes (cast to string for PHPStan; null only occurs on PCRE error)
+        $npi = (string) preg_replace('/[\s\-]/', '', $npi);
 
         // Check length
         if (strlen($npi) !== 10) {

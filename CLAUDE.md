@@ -131,6 +131,24 @@ pre-commit run -a   # Run all checks (PHPCS, PHPStan, Rector, etc.)
 composer test       # Run PHPUnit tests
 ```
 
+### CRITICAL: Handling Errors and Warnings
+
+**NEVER ignore any error or warning from a check.** Make every effort to fix them properly.
+
+**NEVER add entries to bypass files without explicit user approval:**
+
+- `.composer-require-checker.json` `symbol-whitelist` - Do not add symbols here without asking. Fix the root cause instead (add dependency to composer.json, or verify the symbol is actually needed).
+- PHPStan baseline files - Do not add errors to baselines without asking. Fix the code instead.
+- Any other ignore/suppress mechanism - Always fix the issue rather than suppressing it.
+
+**When you encounter a check failure:**
+
+1. **Understand the error** - Read what's actually wrong
+2. **Fix the root cause** - Don't work around it
+3. **If you believe suppression is truly necessary** - Ask the user first and explain why
+
+This applies to ALL static analysis, linting, and validation tools.
+
 ## CI Checks
 
 ### Conventional Commit Titles
@@ -150,17 +168,6 @@ Examples:
 
 CI runs `composer-require-checker` to verify all used symbols are declared as dependencies.
 
-**When adding new OpenEMR classes**, whitelist them in `.composer-require-checker.json`:
-
-```json
-{
-  "symbol-whitelist": [
-    "OpenEMR\\Services\\FacilityService",
-    ...
-  ]
-}
-```
-
 **When using PHP extensions** (like `ctype_digit`), add to `composer.json`:
 
 ```json
@@ -170,6 +177,8 @@ CI runs `composer-require-checker` to verify all used symbols are declared as de
   }
 }
 ```
+
+**OpenEMR classes** used by the module are already whitelisted in `.composer-require-checker.json` since OpenEMR is not a Composer dependency at runtime (it's the host application). If you need to use a new OpenEMR class, ask the user before adding it to the whitelist.
 
 ## Security Checklist
 

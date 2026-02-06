@@ -25,7 +25,7 @@
         <div class="row">
             <div class="col-12">
                 <div class="onc-header">
-                    <img src="https://opencoreemr.com/assets/onc-logo-iNVYUQvE.png"
+                    <img src="{{ webroot }}{{ module_assets_path }}/onc-logo.png"
                          alt="{{ 'ONC Health IT Certification'|xlt }}"
                          class="onc-logo">
                     <div>
@@ -45,7 +45,7 @@
         <div class="row">
             <div class="col-12">
                 <div class="card {{ is_registered ? 'registration-verified' : (is_ready_to_submit ? 'registration-pending' : '') }}">
-                    <div class="card-header" data-toggle="collapse" data-target="#registrationStatus" data-bs-toggle="collapse" data-bs-target="#registrationStatus">
+                    <div class="card-header" role="button" aria-expanded="true" aria-controls="registrationStatus" data-toggle="collapse" data-target="#registrationStatus" data-bs-toggle="collapse" data-bs-target="#registrationStatus">
                         <i class="fa fa-clipboard-check"></i> {{ 'Registration Status'|xlt }}
                         <i class="fa fa-chevron-down collapse-icon float-right float-end"></i>
                         {% if is_registered %}
@@ -101,7 +101,7 @@
         <div class="row">
             <div class="col-12">
                 <div class="card">
-                    <div class="card-header {{ is_registered ? 'collapsed' : '' }}" data-toggle="collapse" data-target="#aboutCertification" data-bs-toggle="collapse" data-bs-target="#aboutCertification">
+                    <div class="card-header {{ is_registered ? 'collapsed' : '' }}" role="button" aria-expanded="{{ is_registered ? 'false' : 'true' }}" aria-controls="aboutCertification" data-toggle="collapse" data-target="#aboutCertification" data-bs-toggle="collapse" data-bs-target="#aboutCertification">
                         <i class="fa fa-info-circle"></i> {{ 'About ONC Certification'|xlt }}
                         <i class="fa fa-chevron-down collapse-icon float-right float-end"></i>
                     </div>
@@ -119,13 +119,13 @@
                                         <li>{{ 'Support NTP v4 (RFC 5905) for time synchronization'|xlt }}</li>
                                     </ol>
                                     <p>
-                                        <a href="https://www.open-emr.org/wiki/index.php/OpenEMR_7.0.2_ONC_Certification_Requirements" target="_blank">
+                                        <a href="{{ onc_requirements_page|attr }}" target="_blank">
                                             {{ 'Read the full ONC Certification Requirements'|xlt }} <i class="fa fa-external-link-alt"></i>
                                         </a>
                                     </p>
                                 </div>
                                 <div class="col-md-3 text-center">
-                                    <img src="https://opencoreemr.com/assets/onc-logo-iNVYUQvE.png"
+                                    <img src="{{ webroot }}{{ module_assets_path }}/onc-logo.png"
                                          alt="{{ 'ONC Health IT Certification'|xlt }}"
                                          class="img-fluid" style="max-width: 150px;">
                                 </div>
@@ -140,7 +140,7 @@
         <div class="row">
             <div class="col-12">
                 <div class="card">
-                    <div class="card-header {{ is_registered ? 'collapsed' : '' }}" data-toggle="collapse" data-target="#configChecklist" data-bs-toggle="collapse" data-bs-target="#configChecklist">
+                    <div class="card-header {{ is_registered ? 'collapsed' : '' }}" role="button" aria-expanded="{{ is_registered ? 'false' : 'true' }}" aria-controls="configChecklist" data-toggle="collapse" data-target="#configChecklist" data-bs-toggle="collapse" data-bs-target="#configChecklist">
                         <i class="fa fa-check-circle"></i> {{ 'Configuration Checklist'|xlt }}
                         <i class="fa fa-chevron-down collapse-icon float-right float-end"></i>
                         {% if all_settings_valid %}
@@ -191,7 +191,7 @@
         <div class="row">
             <div class="col-12">
                 <div class="card">
-                    <div class="card-header {{ is_registered ? 'collapsed' : '' }}" data-toggle="collapse" data-target="#orgInfo" data-bs-toggle="collapse" data-bs-target="#orgInfo">
+                    <div class="card-header {{ is_registered ? 'collapsed' : '' }}" role="button" aria-expanded="{{ is_registered ? 'false' : 'true' }}" aria-controls="orgInfo" data-toggle="collapse" data-target="#orgInfo" data-bs-toggle="collapse" data-bs-target="#orgInfo">
                         <i class="fa fa-building"></i> {{ 'Organization Information'|xlt }}
                         <i class="fa fa-chevron-down collapse-icon float-right float-end"></i>
                         {% if registration_info.complete %}
@@ -273,7 +273,7 @@
         <div class="row">
             <div class="col-12">
                 <div class="card">
-                    <div class="card-header {{ is_registered ? 'collapsed' : '' }}" data-toggle="collapse" data-target="#submitRegistration" data-bs-toggle="collapse" data-bs-target="#submitRegistration">
+                    <div class="card-header {{ is_registered ? 'collapsed' : '' }}" role="button" aria-expanded="{{ is_registered ? 'false' : 'true' }}" aria-controls="submitRegistration" data-toggle="collapse" data-target="#submitRegistration" data-bs-toggle="collapse" data-bs-target="#submitRegistration">
                         <i class="fa fa-paper-plane"></i> {{ 'Submit Registration'|xlt }}
                         <i class="fa fa-chevron-down collapse-icon float-right float-end"></i>
                     </div>

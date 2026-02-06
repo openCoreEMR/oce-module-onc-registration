@@ -15,7 +15,7 @@ namespace OpenCoreEMR\Modules\OncRegistration;
 /**
  * Factory for creating the appropriate configuration accessor.
  *
- * When {VENDOR_PREFIX}_{MODULENAME}_ENV_CONFIG=1 is set, configuration is read from
+ * When OCE_ONC_REGISTRATION_ENV_CONFIG=1 is set, configuration is read from
  * environment variables instead of the database-backed OpenEMR globals.
  *
  * This pattern allows modules to be configured via environment variables in
@@ -27,7 +27,7 @@ class ConfigFactory
      * Environment variable that toggles environment-based configuration.
      * Set to "1" or "true" to enable environment variable configuration mode.
      */
-    public const ENV_CONFIG_VAR = '{VENDOR_PREFIX}_{MODULENAME}_ENV_CONFIG';
+    public const ENV_CONFIG_VAR = 'OCE_ONC_REGISTRATION_ENV_CONFIG';
 
     /**
      * Check if environment-only config mode is enabled
