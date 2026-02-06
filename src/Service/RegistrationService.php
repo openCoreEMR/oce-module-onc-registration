@@ -20,8 +20,14 @@ class RegistrationService
     public const REGISTRATION_EMAIL = 'hello@open-emr.org';
     public const REGISTRATION_SUBJECT = 'ONC registration';
 
+    /** Cache TTL in seconds (5 minutes) */
+    private const CACHE_TTL = 300;
+
     /** @var array{registered: bool, error: ?string}|null Cached verification result */
     private ?array $verificationCache = null;
+
+    /** @var int|null Timestamp when cache was populated */
+    private ?int $cacheTime = null;
 
     private readonly SystemLogger $logger;
 
@@ -38,26 +44,19 @@ class RegistrationService
      */
     public function verifyRegistration(): array
     {
-        if ($this->verificationCache !== null) {
+        // Return cached result if still valid
+        if ($this->verificationCache !== null && $this->isCacheValid()) {
             return $this->verificationCache;
         }
 
         $fhirEndpoint = $this->config->getFhirEndpoint();
         if ($fhirEndpoint === '') {
-            $this->verificationCache = [
-                'registered' => false,
-                'error' => 'FHIR endpoint not configured',
-            ];
-            return $this->verificationCache;
+            return $this->cacheResult(false, 'FHIR endpoint not configured');
         }
 
         $pageContent = $this->fetchPublishedUrlsPage();
         if ($pageContent === null) {
-            $this->verificationCache = [
-                'registered' => false,
-                'error' => 'Unable to fetch published URLs page',
-            ];
-            return $this->verificationCache;
+            return $this->cacheResult(false, 'Unable to fetch published URLs page');
         }
 
         // Check if the FHIR endpoint appears on the page
@@ -66,12 +65,42 @@ class RegistrationService
         $isRegistered = str_contains($pageContent, $endpointNormalized)
             || str_contains($pageContent, $endpointNormalized . '/');
 
-        $this->verificationCache = [
-            'registered' => $isRegistered,
-            'error' => null,
-        ];
+        return $this->cacheResult($isRegistered, null);
+    }
 
+    /**
+     * Cache and return a verification result
+     *
+     * @return array{registered: bool, error: ?string}
+     */
+    private function cacheResult(bool $registered, ?string $error): array
+    {
+        $this->verificationCache = [
+            'registered' => $registered,
+            'error' => $error,
+        ];
+        $this->cacheTime = time();
         return $this->verificationCache;
+    }
+
+    /**
+     * Check if the verification cache is still valid
+     */
+    private function isCacheValid(): bool
+    {
+        if ($this->cacheTime === null) {
+            return false;
+        }
+        return (time() - $this->cacheTime) < self::CACHE_TTL;
+    }
+
+    /**
+     * Clear the verification cache (useful for testing or forced refresh)
+     */
+    public function clearCache(): void
+    {
+        $this->verificationCache = null;
+        $this->cacheTime = null;
     }
 
     /**
@@ -142,8 +171,18 @@ EMAIL;
      */
     public function getPublishedUrlsPage(): string
     {
-        // This URL may change with OpenEMR versions
-        return 'https://www.open-emr.org/wiki/index.php/OpenEMR_7.0.2_API_Service_Base_URLs';
+        $version = $this->config->getOpenEmrWikiVersion();
+        return "https://www.open-emr.org/wiki/index.php/OpenEMR_{$version}_API#Service_Base_URLs";
+    }
+
+    /**
+     * Get the ONC Certification Requirements page URL
+     */
+    public function getOncRequirementsPage(): string
+    {
+        $version = $this->config->getOpenEmrWikiVersion();
+        return "https://www.open-emr.org/wiki/index.php/"
+            . "OpenEMR_{$version}_ONC_Ambulatory_EHR_Certification_Requirements";
     }
 
     /**

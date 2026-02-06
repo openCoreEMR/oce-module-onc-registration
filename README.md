@@ -15,7 +15,7 @@ An OpenEMR module that helps healthcare organizations register their installatio
 
 ## Requirements
 
-- OpenEMR 7.0.2 or later
+- OpenEMR 7.0.3.4 or later
 - PHP 8.2 or later
 
 ## Installation
@@ -101,7 +101,7 @@ For an OpenEMR installation to use the product's ONC certification:
 5. Use FIPS-compliant SSL/TLS ciphers
 6. Support NTP v4 (RFC 5905) for time synchronization
 
-See [OpenEMR ONC Certification Requirements](https://www.open-emr.org/wiki/index.php/OpenEMR_7.0.2_ONC_Certification_Requirements) for full details.
+See the [OpenEMR ONC Certification Requirements](https://www.open-emr.org/wiki/index.php/OpenEMR_7.0.3_ONC_Ambulatory_EHR_Certification_Requirements) wiki page for full details. The module automatically detects your OpenEMR version and links to the appropriate documentation.
 
 ## Development
 

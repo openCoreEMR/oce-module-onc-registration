@@ -46,17 +46,13 @@ class GlobalConfig
 
     // Required OpenEMR global settings for ONC certification
     public const REQUIRED_GLOBALS = [
-        'gbl_fhir_rest_api' => [
+        'rest_fhir_api' => [
             'required_value' => '1',
             'description' => 'Enable OpenEMR Standard FHIR REST API',
         ],
-        'oauth_hash_algo' => [
+        'gbl_auth_hash_algo' => [
             'required_value' => 'SHA512',
             'description' => 'Hash Algorithm for Authentication',
-        ],
-        'oauth_token_hash_algo' => [
-            'required_value' => 'SHA512',
-            'description' => 'Hash Algorithm for Token',
         ],
         'enable_auditlog_encryption' => [
             'required_value' => '1',
@@ -173,6 +169,14 @@ class GlobalConfig
     }
 
     /**
+     * Get the module's public assets path (relative to webroot)
+     */
+    public function getModuleAssetsPath(): string
+    {
+        return '/interface/modules/custom_modules/oce-module-onc-registration/public/assets';
+    }
+
+    /**
      * Get assets static relative path
      */
     public function getAssetsStaticRelative(): string
@@ -186,5 +190,44 @@ class GlobalConfig
     public function getGlobalValue(string $key): string
     {
         return $this->configAccessor->getString($key, '');
+    }
+
+    /**
+     * Get OpenEMR version as "major.minor.patch" (e.g., "7.0.3")
+     *
+     * Falls back to "7.0.3" if version cannot be determined.
+     */
+    public function getOpenEmrVersion(): string
+    {
+        global $v_major, $v_minor, $v_patch;
+
+        if (
+            isset($v_major, $v_minor, $v_patch)
+            && is_scalar($v_major)
+            && is_scalar($v_minor)
+            && is_scalar($v_patch)
+        ) {
+            return $v_major . '.' . $v_minor . '.' . $v_patch;
+        }
+
+        // Fallback for testing or if globals not loaded
+        return '7.0.3';
+    }
+
+    /**
+     * Get OpenEMR major.minor version for wiki URLs (e.g., "7.0.3" or "8.0.0")
+     *
+     * Normalizes patch versions (7.0.3.1 -> 7.0.3) for wiki page URLs.
+     */
+    public function getOpenEmrWikiVersion(): string
+    {
+        $version = $this->getOpenEmrVersion();
+
+        // Extract major.minor.patch (ignore any additional segments like 7.0.3.1)
+        if (preg_match('/^(\d+\.\d+\.\d+)/', $version, $matches)) {
+            return $matches[1];
+        }
+
+        return $version;
     }
 }

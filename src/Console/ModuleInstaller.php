@@ -346,14 +346,12 @@ class ModuleInstaller
                 $classLoader->registerNamespaceIfNotExists($namespace, $moduleDir . '/src');
             }
 
+            /** @var \ModuleManagerListener $instance */
             $instance = \ModuleManagerListener::initListenerSelf();
-            if (is_object($instance) && method_exists($instance, 'moduleManagerAction')) {
-                /** @var mixed $result */
-                $result = $instance->moduleManagerAction($action, $modId, 'Success');
-                if ($result !== 'Success') {
-                    $resultStr = is_scalar($result) ? (string) $result : 'error';
-                    $this->output->writeln("  <comment>ModuleManagerListener ($action): $resultStr</comment>");
-                }
+            /** @var string $result */
+            $result = $instance->moduleManagerAction($action, (string) $modId, 'Success');
+            if ($result !== 'Success') {
+                $this->output->writeln("  <comment>ModuleManagerListener ($action): $result</comment>");
             }
         } catch (\Throwable $e) {
             $this->output->writeln(

@@ -5,7 +5,12 @@
       "package-name": "oce-module-onc-registration",
       "changelog-path": "CHANGELOG.md",
       "extra-files": [
-        "version.php"
+        "version.php",
+        {
+          "type": "generic",
+          "path": "info.txt",
+          "glob": false
+        }
       ],
       "include-component-in-tag": false,
       "include-v-in-tag": false
