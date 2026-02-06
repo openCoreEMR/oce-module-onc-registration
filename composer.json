@@ -27,6 +27,7 @@
   },
   "require": {
     "php": ">=8.2",
+    "ext-ctype": "*",
     "ext-filter": "*",
     "openemr/oe-module-installer-plugin": "^0.1.5",
     "psr/log": "^1.0 || ^2.0 || ^3.0",

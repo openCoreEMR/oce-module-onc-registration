@@ -5,7 +5,7 @@
  *
  * NPI is a 10-digit number with a Luhn check digit.
  *
- * TODO: Replace with OpenEMR\Common\Utils\ValidationUtils::validateNPI() when
+ * Note: Replace with OpenEMR\Common\Utils\ValidationUtils::validateNPI() when
  * minimum OpenEMR version includes it (introduced in master, not yet in a release).
  *
  * @package   OpenCoreEMR

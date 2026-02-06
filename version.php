@@ -30,7 +30,12 @@
         $return_code = 0;
 
         // Build command with properly escaped arguments
-        $escapedArgs = array_map('escapeshellarg', $gitArgs);
+        $escapedArgs = [];
+        foreach ($gitArgs as $arg) {
+            if (is_string($arg)) {
+                $escapedArgs[] = escapeshellarg($arg);
+            }
+        }
         $command = sprintf(
             'git -C %s %s 2>/dev/null',
             escapeshellarg(__DIR__),
