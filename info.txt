@@ -1,1 +1,1 @@
-ONC Registration Module v0.1.0
+ONC Registration Module vx-release-please-version
