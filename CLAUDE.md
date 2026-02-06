@@ -187,3 +187,37 @@ CI runs `composer-require-checker` to verify all used symbols are declared as de
 - Sanitize all output with Twig filters
 - Never expose detailed error messages to users
 - Log security events with structured context
+
+## Module info.txt (REQUIRED)
+
+**Every module MUST have an `info.txt` file.** OpenEMR reads this file to display the module name in the admin UI.
+
+Format: Single line with module name and version (e.g., `ONC Registration Module v0.1.0`). The version is managed by Release Please via the `x-release-please-version` marker.
+
+## Versioning with Release Please
+
+Module versions are managed automatically by Release Please. **Never edit version numbers manually.**
+
+- `.release-please-manifest.json` - Source of truth for version
+- `info.txt` - Updated automatically (module display name with version)
+- `version.php` - Updated automatically (PHP version constants)
+- Merge PRs with conventional commit titles; Release Please handles the rest
+
+## CRITICAL: Handling Errors and Warnings
+
+**NEVER ignore errors or warnings from any check.** Make every effort to fix them properly.
+
+**Forbidden shortcuts (require explicit user approval):**
+- Adding entries to `symbol-whitelist` in `.composer-require-checker.json`
+- Adding entries to a PHPStan baseline file
+- Using `@phpstan-ignore-*` annotations
+- Using `// phpcs:ignore` comments
+- Suppressing warnings with `@SuppressWarnings`
+
+If suppression seems genuinely necessary, **ask the user first** and explain why it cannot be fixed properly.
+
+**The right approach:**
+1. Understand what the error is telling you
+2. Fix the root cause (add missing types, fix logic, add dependencies)
+3. If stuck, ask the user for guidance
+4. Only suppress with explicit user approval and a comment explaining why
