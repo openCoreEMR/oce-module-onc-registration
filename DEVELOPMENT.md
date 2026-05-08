@@ -286,7 +286,7 @@ The template includes pre-commit hooks that automatically run on `git commit`:
 - **PHP Syntax Check** - Validates PHP syntax
 - **PHP CodeSniffer** - Enforces PSR-12 coding standards
 - **PHPStan** - Static analysis (level 8)
-- **Rector** - PHP 8.2+ compatibility checks
+- **Rector** - PHP 8.5+ compatibility checks
 - **Composer Require Checker** - Validates dependencies
 
 #### Manual Checks

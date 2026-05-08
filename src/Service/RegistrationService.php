@@ -23,7 +23,7 @@ class RegistrationService
     public const REGISTRATION_SUBJECT = 'ONC registration';
 
     /** Cache TTL in seconds (5 minutes) */
-    private const CACHE_TTL = 300;
+    private const int CACHE_TTL = 300;
 
     /** @var array{registered: bool, error: ?string}|null Cached verification result */
     private ?array $verificationCache = null;

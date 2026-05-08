@@ -16,7 +16,7 @@ An OpenEMR module that helps healthcare organizations register their installatio
 ## Requirements
 
 - OpenEMR 7.0.3.4 or later
-- PHP 8.2 or later
+- PHP 8.5 or later
 
 ## Installation
 
