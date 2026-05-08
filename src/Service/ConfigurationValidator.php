@@ -10,6 +10,8 @@
  * @license   GNU General Public License 3
  */
 
+declare(strict_types=1);
+
 namespace OpenCoreEMR\Modules\OncRegistration\Service;
 
 use OpenCoreEMR\Modules\OncRegistration\GlobalConfig;
@@ -58,14 +60,7 @@ class ConfigurationValidator
     public function allSettingsValid(): bool
     {
         $results = $this->validateRequiredSettings();
-
-        foreach ($results as $result) {
-            if (!$result['passed']) {
-                return false;
-            }
-        }
-
-        return true;
+        return array_all($results, fn($result) => $result['passed']);
     }
 
     /**

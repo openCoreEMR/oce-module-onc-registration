@@ -33,7 +33,7 @@ class EnvironmentConfigAccessor implements ConfigAccessorInterface
      *
      * @var array<string, string>
      */
-    private const KEY_MAP = [
+    private const array KEY_MAP = [
         GlobalConfig::CONFIG_PREVIEW_MODE => 'OCE_ONC_REGISTRATION_PREVIEW',
     ];
 

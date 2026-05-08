@@ -10,6 +10,8 @@
  * @license   GNU General Public License 3
  */
 
+declare(strict_types=1);
+
 namespace OpenCoreEMR\Modules\OncRegistration\Service;
 
 use OpenCoreEMR\Modules\OncRegistration\GlobalConfig;
@@ -21,7 +23,7 @@ class RegistrationService
     public const REGISTRATION_SUBJECT = 'ONC registration';
 
     /** Cache TTL in seconds (5 minutes) */
-    private const CACHE_TTL = 300;
+    private const int CACHE_TTL = 300;
 
     /** @var array{registered: bool, error: ?string}|null Cached verification result */
     private ?array $verificationCache = null;
