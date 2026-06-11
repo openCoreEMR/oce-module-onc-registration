@@ -24,7 +24,6 @@ require_once __DIR__ . '/Mocks/MockQueryUtils.php';
 require_once __DIR__ . '/Mocks/MockCryptoGen.php';
 require_once __DIR__ . '/Mocks/MockCsrfUtils.php';
 require_once __DIR__ . '/Mocks/MockGlobalSetting.php';
-require_once __DIR__ . '/Mocks/MockDocument.php';
 require_once __DIR__ . '/Mocks/MockKernel.php';
 require_once __DIR__ . '/Mocks/MockTwigContainer.php';
 require_once __DIR__ . '/Mocks/MockGlobalsInitializedEvent.php';
@@ -32,6 +31,14 @@ require_once __DIR__ . '/Mocks/MockMenuEvent.php';
 require_once __DIR__ . '/Mocks/MockPatientDocumentEvent.php';
 require_once __DIR__ . '/Mocks/MockGlobalsAccessor.php';
 require_once __DIR__ . '/Mocks/MockEnvironmentConfigAccessor.php';
+
+// Alias the namespaced mock to the global \Document that OpenEMR provides at
+// runtime. Done via class_alias (not a global class declaration) so static
+// analyzers running over an installed OpenEMR tree never see a competing
+// \Document definition.
+if (!class_exists('Document', false)) {
+    class_alias(\OpenCoreEMR\Modules\OncRegistration\Tests\Mocks\MockDocument::class, 'Document');
+}
 
 // Define OpenEMR global functions used in controllers
 if (!function_exists('xlt')) {
