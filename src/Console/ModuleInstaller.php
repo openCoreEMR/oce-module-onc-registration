@@ -262,11 +262,8 @@ class ModuleInstaller
     public function listModules(): array
     {
         $sql = "SELECT mod_id, mod_name, mod_directory, mod_active, sql_run, type FROM modules ORDER BY mod_directory";
-        $result = QueryUtils::fetchRecords($sql, []);
-        if (!is_array($result)) {
-            return [];
-        }
         /** @var array<int, array<string, mixed>> $result */
+        $result = QueryUtils::fetchRecords($sql, []);
         return $result;
     }
 

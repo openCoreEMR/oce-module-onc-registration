@@ -1,0 +1,28 @@
+# Dev-only paths excluded from `composer archive` and GitHub source zipballs.
+# Consumers (e.g. openemr-internal installs) never receive these, so their
+# whole-tree static analyzers (Rector, PHPStan) don't parse the OpenEMR source
+# under tools/openemr or test mocks as competing definitions of real OpenEMR
+# core classes. See tools/openemr/README.md.
+/tests/ export-ignore
+/.github/ export-ignore
+/.claude/ export-ignore
+/.code-review-graph/ export-ignore
+/tools/ export-ignore
+/phpstan-stubs/ export-ignore
+/.gitattributes export-ignore
+/.gitignore export-ignore
+/Dockerfile.test export-ignore
+/compose.yml export-ignore
+/Taskfile.yml export-ignore
+/phpunit.xml export-ignore
+/phpcs.xml export-ignore
+/phpstan.neon export-ignore
+/rector.php export-ignore
+/.pre-commit-config.yaml export-ignore
+/.editorconfig export-ignore
+/.composer-require-checker.json export-ignore
+/.dclintrc.yaml export-ignore
+/.yamlfmt export-ignore
+/.release-please-manifest.json export-ignore
+/release-please-config.json export-ignore
+/CLAUDE.md export-ignore

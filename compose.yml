@@ -7,12 +7,16 @@ name: oce-module-template
 # - Module mounted into OpenEMR's custom_modules directory
 # - PHPUnit services available via profiles
 #
+# OpenEMR source lives under tools/openemr/vendor/openemr/openemr (NOT the root
+# vendor/) — see tools/openemr/README.md for why. Run `task tools:install`
+# (or `composer install --working-dir=tools/openemr`) before `docker compose up`.
+#
 # TEMPLATE: Replace oce-module-onc-registration with your module name
 
 services:
   openemr:
     extends:
-      file: vendor/openemr/openemr/docker/development-easy/docker-compose.yml
+      file: tools/openemr/vendor/openemr/openemr/docker/development-easy/docker-compose.yml
       service: openemr
     volumes:
     # TEMPLATE: Update the path below with your module name
@@ -29,21 +33,21 @@ services:
 
   mysql:
     extends:
-      file: vendor/openemr/openemr/docker/development-easy/docker-compose.yml
+      file: tools/openemr/vendor/openemr/openemr/docker/development-easy/docker-compose.yml
       service: mysql
     ports: !override
     - "127.0.0.1::3306"
 
   phpmyadmin:
     extends:
-      file: vendor/openemr/openemr/docker/development-easy/docker-compose.yml
+      file: tools/openemr/vendor/openemr/openemr/docker/development-easy/docker-compose.yml
       service: phpmyadmin
     ports: !override
     - "127.0.0.1::8080"
 
   couchdb:
     extends:
-      file: vendor/openemr/openemr/docker/development-easy/docker-compose.yml
+      file: tools/openemr/vendor/openemr/openemr/docker/development-easy/docker-compose.yml
       service: couchdb
     ports: !override
     - "127.0.0.1::5984"
@@ -51,7 +55,7 @@ services:
 
   openldap:
     extends:
-      file: vendor/openemr/openemr/docker/development-easy/docker-compose.yml
+      file: tools/openemr/vendor/openemr/openemr/docker/development-easy/docker-compose.yml
       service: openldap
 
   # PHPUnit test runner
