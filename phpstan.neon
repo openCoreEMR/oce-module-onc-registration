@@ -9,17 +9,36 @@ parameters:
     # PHP version
     phpVersion: 80500
 
+    # OpenEMR source lives under tools/openemr/vendor (NOT root vendor —
+    # see tools/openemr/README.md for the #118 redeclare trap). Load its
+    # autoloader so PHPStan can resolve OpenEMR\… types directly from the
+    # real source rather than from hand-maintained stubs.
+    #
+    # static-analysis-bootstrap.php MUST come first: it defines
+    # OPENEMR_STATIC_ANALYSIS so core files that query the DB at include time
+    # (reached via FacilityService -> BaseService -> code_types.inc.php) take
+    # their no-DB path instead of fataling during reflection.
+    bootstrapFiles:
+        - phpstan-stubs/static-analysis-bootstrap.php
+        - tools/openemr/vendor/autoload.php
+
     # Ignore errors in vendor
     excludePaths:
-        - vendor
+        analyseAndScan:
+            - vendor
+            - tools/openemr/vendor
 
     # Stubs for dynamically loaded classes
     stubFiles:
         - phpstan-stubs/ModuleManagerListener.php
 
-    # Scan OpenEMR library files that define global functions
+    # Scan OpenEMR library files that define global functions. These live in
+    # library/ and are loaded via globals.php at runtime, not autoloaded, so
+    # PHPStan needs them scanned to resolve the symbols the analysed code (and
+    # the OpenEMR services it reflects through, e.g. FacilityService) calls.
     scanFiles:
-        - vendor/openemr/openemr/library/htmlspecialchars.inc.php
+        - tools/openemr/vendor/openemr/openemr/library/htmlspecialchars.inc.php
+        - tools/openemr/vendor/openemr/openemr/library/sql.inc.php
 
     # Additional checks
     checkMissingCallableSignature: true

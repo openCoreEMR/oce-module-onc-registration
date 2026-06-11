@@ -266,13 +266,19 @@ tasks:
     - composer update
     - echo "Composer dependencies updated"
 
+  tools:install:
+    desc: Install OpenEMR source under tools/openemr (NOT root vendor/) — see tools/openemr/README.md
+    cmds:
+    - composer install --working-dir=tools/openemr
+    - echo "OpenEMR source installed under tools/openemr/vendor/openemr/openemr"
+
   openemr:prebuild:
     desc: Pre-build OpenEMR dependencies (speeds up first Docker start)
     cmds:
     - echo "Building OpenEMR dependencies..."
-    - cd vendor/openemr/openemr && composer install --no-dev
-    - cd vendor/openemr/openemr && npm install --legacy-peer-deps
-    - cd vendor/openemr/openemr && npm run build
+    - cd tools/openemr/vendor/openemr/openemr && composer install --no-dev
+    - cd tools/openemr/vendor/openemr/openemr && npm install --legacy-peer-deps
+    - cd tools/openemr/vendor/openemr/openemr && npm run build
     - echo "OpenEMR dependencies built"
 
   git:clean:
@@ -283,27 +289,29 @@ tasks:
     - echo "Untracked files removed (preserved .local/)"
 
   vendor:clean:
-    desc: Remove vendor directory (forces complete reinstall of dependencies)
-    prompt: This will DELETE the entire vendor directory. Continue?
+    desc: Remove vendor directories (root + tools/openemr) for a complete reinstall
+    prompt: This will DELETE vendor/ and tools/openemr/vendor/. Continue?
     preconditions:
     - sh: test -z "$(docker volume ls -q --filter name={{.MODULE_NAME}} 2>/dev/null)"
       msg: |
         Docker volumes still exist. You must run 'task dev:purge' first.
 
-        Reason: OpenEMR stores crypto keys in both the database (volume) and filesystem (vendor).
-        Removing vendor without removing volumes will break encryption and make the database unusable.
+        Reason: OpenEMR stores crypto keys in both the database (volume) and filesystem
+        (tools/openemr/vendor). Removing vendor without removing volumes will break
+        encryption and make the database unusable.
 
         Run: task workflow:nuke (to remove both) or task dev:purge (then task vendor:clean)
     cmds:
-    - git clean -ffdx vendor/
-    - echo "Vendor directory removed"
+    - git clean -ffdx vendor/ tools/openemr/vendor/
+    - echo "Vendor directories removed"
 
   # === Quick Workflows ===
 
   setup:
-    desc: Complete setup (install deps, prebuild OpenEMR, start Docker)
+    desc: Complete setup (install deps, install OpenEMR source, prebuild, start Docker)
     cmds:
     - task: composer:install
+    - task: tools:install
     - task: openemr:prebuild
     - task: dev:start
     - task: dev:port

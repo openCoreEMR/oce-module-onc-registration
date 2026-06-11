@@ -17,6 +17,7 @@ use OpenCoreEMR\Modules\OncRegistration\Service\ConfigurationValidator;
 use OpenCoreEMR\Modules\OncRegistration\Service\NpiValidator;
 use OpenCoreEMR\Modules\OncRegistration\Service\RegistrationService;
 use OpenEMR\Common\Logging\SystemLogger;
+use OpenEMR\Common\Session\SessionWrapperFactory;
 use OpenEMR\Common\Twig\TwigContainer;
 use OpenEMR\Core\Kernel;
 use OpenEMR\Events\Globals\GlobalsInitializedEvent;
@@ -185,7 +186,8 @@ class Bootstrap
             new ConfigurationValidator($this->globalsConfig),
             new RegistrationService($this->globalsConfig),
             new NpiValidator(),
-            $this->twig
+            $this->twig,
+            SessionWrapperFactory::getInstance()->getActiveSession()
         );
     }
 }

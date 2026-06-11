@@ -1,0 +1,35 @@
+{
+  "name": "opencoreemr/oce-module-onc-registration-tools-openemr",
+  "description": "OpenEMR source tree for static analysis (PHPStan) and the local Docker bind mount. Pinned to PUBLIC upstream openemr/openemr rel-810 so analysis resolves the Symfony-Session API the module targets (rel-810's CsrfUtils is byte-identical to the internal oce-810 core, and every OpenEMR symbol this module uses exists on rel-810). Not a runtime dependency of the module — see tools/openemr/README.md. Public upstream needs no credential, so CI requires no GitHub App token.",
+  "type": "project",
+  "license": "GPL-3.0-or-later",
+  "require": {
+    "openemr/openemr": "dev-rel-810"
+  },
+  "repositories": [
+    {
+      "type": "package",
+      "package": {
+        "name": "openemr/openemr",
+        "version": "dev-rel-810",
+        "autoload": {
+          "psr-4": {
+            "OpenEMR\\": "src/"
+          }
+        },
+        "source": {
+          "type": "git",
+          "url": "https://github.com/openemr/openemr.git",
+          "reference": "rel-810"
+        }
+      }
+    }
+  ],
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "config": {
+    "allow-plugins": {
+      "openemr/oe-module-installer-plugin": false
+    }
+  }
+}

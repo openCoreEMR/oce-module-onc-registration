@@ -23,6 +23,7 @@ use OpenCoreEMR\Modules\OncRegistration\Service\RegistrationService;
 use OpenEMR\Common\Csrf\CsrfUtils;
 use OpenEMR\Common\Logging\SystemLogger;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\Session\SessionInterface;
 use Twig\Environment;
 
 class DashboardController
@@ -34,7 +35,8 @@ class DashboardController
         private readonly ConfigurationValidator $configValidator,
         private readonly RegistrationService $registrationService,
         private readonly NpiValidator $npiValidator,
-        private readonly Environment $twig
+        private readonly Environment $twig,
+        private readonly SessionInterface $session
     ) {
         $this->logger = new SystemLogger();
     }
@@ -83,7 +85,7 @@ class DashboardController
 
         $content = $this->twig->render('dashboard/index.html.twig', [
             'title' => 'ONC Registration',
-            'csrf_token' => CsrfUtils::collectCsrfToken(),
+            'csrf_token' => CsrfUtils::collectCsrfToken($this->session),
             'webroot' => $this->config->getWebroot(),
             'module_assets_path' => $this->config->getModuleAssetsPath(),
 
@@ -149,7 +151,7 @@ EMAIL;
 
         $content = $this->twig->render('dashboard/index.html.twig', [
             'title' => 'ONC Registration (Preview)',
-            'csrf_token' => CsrfUtils::collectCsrfToken(),
+            'csrf_token' => CsrfUtils::collectCsrfToken($this->session),
             'webroot' => $this->config->getWebroot(),
             'module_assets_path' => $this->config->getModuleAssetsPath(),
 
@@ -189,7 +191,7 @@ EMAIL;
     private function validateNpi(array $params): Response
     {
         $csrfToken = $params['csrf_token'] ?? '';
-        if (!CsrfUtils::verifyCsrfToken($csrfToken)) {
+        if (!CsrfUtils::verifyCsrfToken($csrfToken, $this->session)) {
             throw new OncRegistrationAccessDeniedException('CSRF token verification failed');
         }
 
