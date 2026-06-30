@@ -60,7 +60,7 @@ class ConfigurationValidator
     public function allSettingsValid(): bool
     {
         $results = $this->validateRequiredSettings();
-        return array_all($results, fn($result) => $result['passed']);
+        return array_all($results, fn(array $result) => $result['passed']);
     }
 
     /**
