@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.2.1](https://github.com/openCoreEMR/oce-module-onc-registration/compare/0.2.0...0.2.1) (2026-07-16)
+
+
+### Bug Fixes
+
+* **deps:** bump symfony/console from 7.4.13 to 7.4.14 ([#53](https://github.com/openCoreEMR/oce-module-onc-registration/issues/53)) ([5855105](https://github.com/openCoreEMR/oce-module-onc-registration/commit/5855105560a1b24be0bd3dbcfa1e9563771cdbcb))
+* **deps:** bump symfony/event-dispatcher from 7.4.9 to 7.4.14 ([#54](https://github.com/openCoreEMR/oce-module-onc-registration/issues/54)) ([3ea99e4](https://github.com/openCoreEMR/oce-module-onc-registration/commit/3ea99e46cd7416dd67f306fc50e09350cb6be294))
+* **deps:** bump symfony/http-foundation from 7.4.13 to 7.4.14 ([#52](https://github.com/openCoreEMR/oce-module-onc-registration/issues/52)) ([7bbe121](https://github.com/openCoreEMR/oce-module-onc-registration/commit/7bbe1213c99cb0b86ace3c06d0a52968fe0c3d1f))
+* **deps:** bump twig/twig from 3.27.1 to 3.28.0 ([#58](https://github.com/openCoreEMR/oce-module-onc-registration/issues/58)) ([5a74d05](https://github.com/openCoreEMR/oce-module-onc-registration/commit/5a74d0573e2128635ed0a715ae50aa91a7d64084))
+
 ## [0.2.0](https://github.com/openCoreEMR/oce-module-onc-registration/compare/0.1.0...0.2.0) (2026-06-11)
 
 
